@@ -4,12 +4,18 @@
 const STORAGE_KEY = "english-easy-progress";
 const LEARNED_AT = 3; // сколько правильных ответов нужно, чтобы слово считалось выученным
 
+function emptyProgress() {
+  // saved: слова, которые пользователь переводил при чтении { en: {en, ru, ex, story} }
+  // stories: прочитанные рассказы { index: true }; best: рекорды игры «На скорость»
+  return { words: {}, xp: 0, streak: 0, lastDay: null, grammar: {}, saved: {}, stories: {}, best: {} };
+}
+
 function loadProgress() {
   try {
     const p = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (p && typeof p === "object") return { words: {}, xp: 0, streak: 0, lastDay: null, grammar: {}, ...p };
+    if (p && typeof p === "object") return { ...emptyProgress(), ...p };
   } catch (e) { /* хранилище недоступно */ }
-  return { words: {}, xp: 0, streak: 0, lastDay: null, grammar: {} };
+  return emptyProgress();
 }
 
 let progress = loadProgress();
@@ -19,13 +25,14 @@ function save() {
   updateStats();
 }
 
-function today() { return new Date().toISOString().slice(0, 10); }
+function dayString(offsetDays = 0) {
+  return new Date(Date.now() - offsetDays * 86400000).toISOString().slice(0, 10);
+}
 
 function touchStreak() {
-  const t = today();
+  const t = dayString();
   if (progress.lastDay === t) return;
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  progress.streak = progress.lastDay === yesterday ? progress.streak + 1 : 1;
+  progress.streak = progress.lastDay === dayString(1) ? progress.streak + 1 : 1;
   progress.lastDay = t;
 }
 
@@ -39,16 +46,10 @@ function markAnswer(en, correct) {
 
 function isLearned(en) { return (progress.words[en] || 0) >= LEARNED_AT; }
 
-function topicProgress(key) {
-  const words = TOPICS[key].words;
-  return words.filter(w => isLearned(w[0])).length / words.length;
-}
-
 function updateStats() {
   document.getElementById("stat-learned").textContent = Object.values(progress.words).filter(v => v >= LEARNED_AT).length;
   document.getElementById("stat-xp").textContent = progress.xp;
-  const alive = progress.lastDay === today() ||
-    progress.lastDay === new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const alive = progress.lastDay === dayString() || progress.lastDay === dayString(1);
   document.getElementById("stat-streak").textContent = alive ? progress.streak : 0;
 }
 
@@ -68,12 +69,12 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-function speak(text) {
+function speak(text, rate = 0.9) {
   if (!("speechSynthesis" in window)) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text.replace(/^to /, ""));
   u.lang = "en-US";
-  u.rate = 0.9;
+  u.rate = rate;
   speechSynthesis.speak(u);
 }
 
@@ -81,47 +82,123 @@ function normalize(s) {
   return s.trim().toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").replace(/^to /, "");
 }
 
-function allWords() {
+function topicWords() {
   return Object.values(TOPICS).flatMap(t => t.words);
+}
+
+function savedList(storyIdx) {
+  return Object.values(progress.saved)
+    .filter(s => storyIdx === undefined || s.story === storyIdx)
+    .map(s => [s.en, s.ru, s.ex]);
+}
+
+// Все слова, которые встречаются в приложении (для вариантов ответа и повторения)
+function allWords() {
+  const seen = new Set();
+  return [...topicWords(), ...savedList()].filter(w => !seen.has(w[0]) && seen.add(w[0]));
 }
 
 function backBtn(target, label = "← Назад") {
   return `<button class="back" data-go="${target}">${label}</button>`;
 }
 
-function resultScreen(correct, total, again, backTo) {
-  const pct = Math.round((correct / total) * 100);
+// Набор слов для игр: тема, рассказ (s0, s1, ...), «мои слова» или повторение
+function getSet(arg) {
+  if (TOPICS[arg]) return { words: TOPICS[arg].words, title: TOPICS[arg].title, backTo: "topic:" + arg };
+  if (arg === "my") return { words: savedList(), title: "Мои слова", backTo: "mywords" };
+  if (arg === "review") {
+    return { words: allWords().filter(w => progress.words[w[0]] !== undefined && !isLearned(w[0])), title: "Повторение", backTo: "home" };
+  }
+  const m = /^s(\d+)$/.exec(arg || "");
+  if (m && STORIES[m[1]]) {
+    return { words: savedList(Number(m[1])), title: STORIES[m[1]].title, backTo: "story-done:" + m[1] };
+  }
+  return null;
+}
+
+function emptySet(set) {
+  app.innerHTML = `
+    ${backBtn(set ? set.backTo : "home")}
+    <div class="card result">
+      <div class="big">📭</div>
+      <h1>Здесь пока нет слов</h1>
+      <p class="muted">Читай рассказы и нажимай на незнакомые слова — они появятся здесь.</p>
+      <button class="btn primary" data-go="home">На главную</button>
+    </div>`;
+}
+
+// Плитки игр для набора слов
+function gameTiles(arg, count) {
+  const games = [
+    ["cards", "🃏", "Карточки", "Смотри и запоминай", 1],
+    ["quiz", "✅", "Тест", "Выбери перевод", 1],
+    ["typing", "⌨️", "Написание", "Напиши по-английски", 1],
+    ["pairs", "🔗", "Пары", "Соедини слово и перевод", 2],
+    ["listen", "🎧", "На слух", "Услышь и выбери", 1],
+    ["blitz", "⚡", "На скорость", progress.best[arg] ? `Рекорд: ${progress.best[arg]}` : "60 секунд, 3 жизни", 1],
+  ];
+  return `<div class="modes">${games.map(([mode, icon, name, sub, min]) => `
+    <button class="tile" data-go="${mode}:${arg}" ${count < min ? "disabled" : ""}>
+      <div class="icon">${icon}</div><div class="name">${name}</div><div class="sub">${count < min ? `Нужно слов: ${min}` : sub}</div>
+    </button>`).join("")}</div>`;
+}
+
+function resultScreen(correct, total, again, backTo, extra = "") {
+  const pct = total ? Math.round((correct / total) * 100) : 0;
   const emoji = pct === 100 ? "🏆" : pct >= 70 ? "🎉" : pct >= 40 ? "👍" : "💪";
   app.innerHTML = `
     <div class="card result">
       <div class="big">${emoji}</div>
       <h1>${correct} из ${total}</h1>
       <p class="muted">${pct >= 70 ? "Отличная работа!" : "Продолжай тренироваться — всё получится!"}</p>
+      ${extra}
       <div class="row" style="justify-content:center">
         <button class="btn primary" id="again">Ещё раз</button>
-        <button class="btn" data-go="${backTo}">К теме</button>
+        <button class="btn" data-go="${backTo}">Назад</button>
       </div>
     </div>`;
   document.getElementById("again").onclick = again;
 }
 
-// ---------- Экраны ----------
+// ---------- Главная ----------
+function storyUnlocked(i) { return i === 0 || !!progress.stories[i - 1]; }
+
 function renderHome() {
-  const toReview = allWords().filter(w => progress.words[w[0]] !== undefined && !isLearned(w[0]));
+  const review = getSet("review").words;
+  const myCount = Object.keys(progress.saved).length;
   app.innerHTML = `
     <h1>Учим английский 🚀</h1>
-    <p class="muted">Выбери тему, учи слова на карточках и проверяй себя в тестах.</p>
+    <p class="muted">Читай рассказы, учи слова по темам и играй, чтобы их запомнить.</p>
 
-    ${toReview.length ? `
+    ${review.length ? `
       <div class="card row" style="justify-content:space-between;margin-top:16px">
-        <div><b>Повторение</b><div class="muted">Слов на повторение: ${toReview.length}</div></div>
-        <button class="btn primary" data-go="review">Повторить</button>
+        <div><b>Повторение</b><div class="muted">Слов на повторение: ${review.length}</div></div>
+        <button class="btn primary" data-go="quiz:review">Повторить</button>
       </div>` : ""}
+
+    <h2>📚 Чтение книги</h2>
+    <p class="muted" style="margin-top:-6px">Рассказы идут от самого лёгкого к сложному. К каждому есть правило.</p>
+    <div class="grid">
+      <button class="tile" data-go="mywords">
+        <div class="icon">⭐</div>
+        <div class="name">Мои слова</div>
+        <div class="sub">${myCount} слов из рассказов</div>
+      </button>
+      ${STORIES.map((s, i) => {
+        const open = storyUnlocked(i);
+        return `
+          <button class="tile ${open ? "" : "locked"}" data-go="${open ? "story:" + i : ""}" ${open ? "" : "disabled"}>
+            <div class="sub">${open ? (progress.stories[i] ? "✅ Прочитано" : "📖 Рассказ " + (i + 1)) : "🔒 Сначала прочитай предыдущий"}</div>
+            <div class="name">${esc(s.title)}</div>
+            <div class="sub">${esc(s.ru)} · ${esc(s.level)}</div>
+          </button>`;
+      }).join("")}
+    </div>
 
     <h2>📖 Словарь по темам</h2>
     <div class="grid">
       ${Object.entries(TOPICS).map(([key, t]) => {
-        const p = topicProgress(key);
+        const p = t.words.filter(w => isLearned(w[0])).length / t.words.length;
         return `
           <button class="tile" data-go="topic:${key}">
             <div class="icon">${t.icon}</div>
@@ -146,7 +223,7 @@ function renderHome() {
   `;
   document.getElementById("reset").onclick = () => {
     if (confirm("Точно сбросить весь прогресс?")) {
-      progress = { words: {}, xp: 0, streak: 0, lastDay: null, grammar: {} };
+      progress = emptyProgress();
       save();
       renderHome();
     }
@@ -159,34 +236,226 @@ function renderTopic(key) {
     ${backBtn("home")}
     <h1>${t.icon} ${esc(t.title)}</h1>
     <p class="muted">Выучено ${t.words.filter(w => isLearned(w[0])).length} из ${t.words.length}</p>
-    <div class="modes">
-      <button class="tile" data-go="cards:${key}"><div class="icon">🃏</div><div class="name">Карточки</div><div class="sub">Смотри и запоминай</div></button>
-      <button class="tile" data-go="quiz:${key}"><div class="icon">✅</div><div class="name">Тест</div><div class="sub">Выбери правильный перевод</div></button>
-      <button class="tile" data-go="typing:${key}"><div class="icon">⌨️</div><div class="name">Написание</div><div class="sub">Напиши слово по-английски</div></button>
-      <button class="tile" data-go="pairs:${key}"><div class="icon">🔗</div><div class="name">Пары</div><div class="sub">Соедини слово и перевод</div></button>
-      <button class="tile" data-go="listen:${key}"><div class="icon">🎧</div><div class="name">На слух</div><div class="sub">Услышь и выбери</div></button>
-    </div>
+    ${gameTiles(key, t.words.length)}
     <h2>Список слов</h2>
-    <div class="card">
-      <ul class="wordlist">
-        ${t.words.map(([en, ru]) => `
-          <li>
-            <span><span class="en">${esc(en)}</span> — ${esc(ru)} ${isLearned(en) ? '<span class="badge">выучено</span>' : ""}</span>
-            <button class="speak" data-say="${esc(en)}" title="Произнести">🔊</button>
-          </li>`).join("")}
-      </ul>
+    <div class="card">${wordList(t.words, false)}</div>`;
+}
+
+function wordList(words, removable) {
+  return `<ul class="wordlist">
+    ${words.map(([en, ru]) => `
+      <li>
+        <span><span class="en">${esc(en)}</span> — ${esc(ru)} ${isLearned(en) ? '<span class="badge">выучено</span>' : ""}</span>
+        <span class="row" style="flex-wrap:nowrap">
+          <button class="speak" data-say="${esc(en)}" title="Произнести">🔊</button>
+          ${removable ? `<button class="speak" data-unsave="${esc(en)}" title="Убрать из моих слов">✕</button>` : ""}
+        </span>
+      </li>`).join("")}
+  </ul>`;
+}
+
+// ---------- Чтение ----------
+const WORD_RE = /[A-Za-z]+(?:'[A-Za-z]+)?/g;
+
+function lookup(story, word) {
+  const key = word.toLowerCase();
+  const entry = STORIES[story].dict[key] || COMMON_DICT[key];
+  if (!entry) return null;
+  if (typeof entry === "string") return { word: key, base: key, ru: entry, note: "" };
+  return { word: key, base: entry[0], ru: entry[1], note: entry[2] || "" };
+}
+
+function wrapWords(text) {
+  let out = "", last = 0;
+  text.replace(WORD_RE, (w, idx) => {
+    out += esc(text.slice(last, idx)) + `<span class="w" data-w="${esc(w)}">${esc(w)}</span>`;
+    last = idx + w.length;
+  });
+  return out + esc(text.slice(last));
+}
+
+let currentStory = null;
+
+function renderStory(i) {
+  if (!storyUnlocked(i)) return renderHome();
+  const s = STORIES[i];
+  currentStory = i;
+  app.innerHTML = `
+    ${backBtn("home")}
+    <div class="counter">Рассказ ${i + 1} из ${STORIES.length} · ${esc(s.level)}</div>
+    <h1>${wrapWords(s.title)}</h1>
+    <p class="muted" style="margin-top:0">${esc(s.ru)}</p>
+
+    <details class="card rule" ${progress.stories[i] ? "" : "open"}>
+      <summary>📘 Правило: ${esc(s.rule.title)}</summary>
+      <div class="theory">${s.rule.html}</div>
+    </details>
+
+    <p class="hint" style="text-align:left">👆 Нажми на любое слово, чтобы увидеть перевод. Слово сохранится в «Мои слова» для тренировки.</p>
+    <div class="row">
+      <button class="btn" id="read-all">🔊 Прочитать вслух</button>
+      <button class="btn" id="toggle-tr">🇷🇺 Показать весь перевод</button>
+    </div>
+
+    <div class="card book" id="book">
+      ${s.text.map(([en, ru], k) => `
+        <div class="sentence">
+          <div class="en-line">${wrapWords(en)}
+            <button class="tr-btn" data-k="${k}" title="Перевод предложения">↔</button>
+          </div>
+          <div class="ru-line" id="tr-${k}" hidden>${esc(ru)}</div>
+        </div>`).join("")}
+    </div>
+
+    <h2>⭐ Слова из этого рассказа</h2>
+    <div class="card" id="story-words"></div>
+
+    <div style="margin-top:16px">
+      <button class="btn primary" data-go="story-done:${i}">Я дочитал(а) → тренировать слова</button>
+    </div>`;
+
+  refreshStoryWords();
+
+  document.getElementById("read-all").onclick = () => speak(s.text.map(t => t[0]).join(" "), 0.85);
+  let shown = false;
+  document.getElementById("toggle-tr").onclick = e => {
+    shown = !shown;
+    app.querySelectorAll(".ru-line").forEach(el => { el.hidden = !shown; });
+    e.target.textContent = shown ? "🇷🇺 Скрыть перевод" : "🇷🇺 Показать весь перевод";
+  };
+  app.querySelectorAll(".tr-btn").forEach(b => {
+    b.onclick = e => {
+      e.stopPropagation();
+      const line = document.getElementById("tr-" + b.dataset.k);
+      line.hidden = !line.hidden;
+      if (!line.hidden) speak(s.text[b.dataset.k][0]);
+    };
+  });
+}
+
+function sentenceWith(story, word) {
+  const found = STORIES[story].text.find(([en]) => (en.match(WORD_RE) || []).some(w => w.toLowerCase() === word));
+  return found ? found[0] : "";
+}
+
+function refreshStoryWords() {
+  if (currentStory === null) return;
+  const box = document.getElementById("story-words");
+  if (box) {
+    const words = savedList(currentStory);
+    box.innerHTML = words.length
+      ? wordList(words, true)
+      : `<p class="muted" style="margin:0">Пока пусто. Нажимай на незнакомые слова в тексте.</p>`;
+  }
+  // Подсвечиваем в тексте слова, которые уже сохранены
+  app.querySelectorAll(".w").forEach(el => {
+    const info = lookup(currentStory, el.dataset.w);
+    el.classList.toggle("saved", !!(info && progress.saved[info.base]));
+  });
+}
+
+// Нижняя панель с переводом слова
+const sheet = document.getElementById("sheet");
+
+function openSheet(word) {
+  const info = lookup(currentStory, word);
+  if (!info) return;
+  const isSaved = () => !!progress.saved[info.base];
+  // Нажал на слово — значит не знает: сразу добавляем в «Мои слова»
+  if (!isSaved()) {
+    progress.saved[info.base] = { en: info.base, ru: info.ru, ex: sentenceWith(currentStory, info.word), story: currentStory };
+    touchStreak();
+    save();
+  }
+  const draw = () => {
+    sheet.innerHTML = `
+      <button class="sheet-close" id="sheet-close" aria-label="Закрыть">✕</button>
+      <div class="row">
+        <div class="sheet-word">${esc(info.word)}</div>
+        <button class="speak" data-say="${esc(info.word)}">🔊</button>
+      </div>
+      ${info.base !== info.word ? `<div class="muted">Начальная форма: <b>${esc(info.base)}</b></div>` : ""}
+      <div class="sheet-ru">${esc(info.ru)}</div>
+      ${info.note ? `<div class="muted">💡 ${esc(info.note)}</div>` : ""}
+      <button class="btn ${isSaved() ? "" : "primary"}" id="sheet-save" style="margin-top:12px">
+        ${isSaved() ? "✓ В моих словах (убрать)" : "⭐ Добавить в мои слова"}
+      </button>`;
+    document.getElementById("sheet-close").onclick = closeSheet;
+    document.getElementById("sheet-save").onclick = () => {
+      if (isSaved()) delete progress.saved[info.base];
+      else progress.saved[info.base] = { en: info.base, ru: info.ru, ex: sentenceWith(currentStory, info.word), story: currentStory };
+      save();
+      draw();
+      refreshStoryWords();
+    };
+  };
+  draw();
+  sheet.hidden = false;
+  refreshStoryWords();
+  speak(info.word);
+}
+
+function closeSheet() { sheet.hidden = true; }
+
+function renderStoryDone(i) {
+  if (!storyUnlocked(i)) return renderHome();
+  const s = STORIES[i];
+  const first = !progress.stories[i];
+  if (first) {
+    progress.stories[i] = true;
+    progress.xp += 50;
+    touchStreak();
+    save();
+  }
+  const words = savedList(i);
+  const next = STORIES[i + 1];
+  app.innerHTML = `
+    ${backBtn("story:" + i, "← К тексту")}
+    <div class="card result">
+      <div class="big">📖🎉</div>
+      <h1>Рассказ «${esc(s.title)}» прочитан!</h1>
+      ${first ? `<p class="muted">+50 ⭐ ${next ? "· Открыт следующий рассказ" : ""}</p>` : ""}
+    </div>
+
+    <h2>1. Закрепи правило</h2>
+    <div class="card row" style="justify-content:space-between">
+      <div><b>${esc(s.rule.title)}</b><div class="muted">${s.exercises.length} задания</div></div>
+      <button class="btn primary" data-go="srule:${i}">Упражнения</button>
+    </div>
+
+    <h2>2. Выучи новые слова (${words.length})</h2>
+    ${words.length
+      ? `<p class="muted" style="margin-top:-6px">Это слова, которые ты переводил. Поиграй, чтобы их запомнить!</p>${gameTiles("s" + i, words.length)}`
+      : `<div class="card"><p style="margin:0">Ты не открыл ни одного перевода — значит, знаешь все слова! 💪</p></div>`}
+
+    <div class="row" style="margin-top:24px">
+      ${next ? `<button class="btn primary" data-go="story:${i + 1}">Следующий рассказ →</button>` : `<p class="muted">Это был последний рассказ. Скоро будут новые!</p>`}
+      <button class="btn" data-go="home">На главную</button>
     </div>`;
 }
 
-// --- Карточки ---
-function renderCards(key) {
-  const words = shuffle(TOPICS[key].words);
+function renderMyWords() {
+  const words = savedList();
+  app.innerHTML = `
+    ${backBtn("home")}
+    <h1>⭐ Мои слова</h1>
+    <p class="muted">Слова, которые ты переводил при чтении. Выучено ${words.filter(w => isLearned(w[0])).length} из ${words.length}.</p>
+    ${gameTiles("my", words.length)}
+    <h2>Список</h2>
+    <div class="card" id="my-list">${words.length ? wordList(words, true) : '<p class="muted" style="margin:0">Пока пусто. Открой рассказ и нажимай на незнакомые слова.</p>'}</div>`;
+}
+
+// ---------- Игры ----------
+function renderCards(arg) {
+  const set = getSet(arg);
+  if (!set || !set.words.length) return emptySet(set);
+  const words = shuffle(set.words);
   let i = 0;
 
   function draw() {
     const [en, ru, ex] = words[i];
     app.innerHTML = `
-      ${backBtn("topic:" + key)}
+      ${backBtn(set.backTo)}
       <div class="row" style="justify-content:space-between">
         <span class="counter">Карточка ${i + 1} из ${words.length}</span>
         <button class="speak" data-say="${esc(en)}">🔊</button>
@@ -194,7 +463,7 @@ function renderCards(key) {
       <div class="flashcard" id="fc">
         <div class="flashcard-inner">
           <div class="face"><div class="word">${esc(en)}</div><div class="hint">Нажми, чтобы перевернуть</div></div>
-          <div class="face back-face"><div class="word">${esc(ru)}</div><div class="example">${esc(ex)}</div></div>
+          <div class="face back-face"><div class="word">${esc(ru)}</div><div class="example">${esc(ex || "")}</div></div>
         </div>
       </div>
       <div class="row" style="justify-content:space-between">
@@ -204,7 +473,7 @@ function renderCards(key) {
     document.getElementById("fc").onclick = () => document.getElementById("fc").classList.toggle("flipped");
     document.getElementById("prev").onclick = () => { i--; draw(); };
     document.getElementById("next").onclick = () => {
-      if (i === words.length - 1) { touchStreak(); save(); navigate("topic:" + key); }
+      if (i === words.length - 1) { touchStreak(); save(); navigate(set.backTo); }
       else { i++; draw(); }
     };
     speak(en);
@@ -212,25 +481,39 @@ function renderCards(key) {
   draw();
 }
 
-// --- Тест с вариантами (обычный и на слух) ---
-function renderQuiz(key, mode = "quiz", wordsOverride = null) {
-  const pool = wordsOverride || TOPICS[key].words;
-  const questions = shuffle(pool).slice(0, 10);
-  const backTo = key ? "topic:" + key : "home";
-  const distractorPool = key ? TOPICS[key].words : allWords();
+// Варианты ответа: правильный + 3 других, без повторов
+function makeOptions(answer, en, pool, field) {
+  const vals = [answer];
+  for (const w of shuffle(pool)) {
+    if (vals.length >= 4) break;
+    const v = w[field];
+    if (w[0] !== en && !vals.includes(v)) vals.push(v);
+  }
+  return shuffle(vals);
+}
+
+function distractorPool(set) {
+  return set.words.length >= 4 ? set.words : allWords();
+}
+
+// Тест с вариантами (обычный и на слух)
+function renderQuiz(arg, mode = "quiz") {
+  const set = getSet(arg);
+  if (!set || !set.words.length) return emptySet(set);
+  const questions = shuffle(set.words).slice(0, 10);
+  const pool = distractorPool(set);
   let i = 0, correct = 0;
 
   function draw() {
     const [en, ru] = questions[i];
     // В режиме теста чередуем направление: en→ru и ru→en
     const reverse = mode === "quiz" && i % 2 === 1;
-    const answer = mode === "listen" ? en : reverse ? en : ru;
-    const others = shuffle(distractorPool.filter(w => w[0] !== en))
-      .slice(0, 3).map(w => (mode === "listen" || reverse) ? w[0] : w[1]);
-    const options = shuffle([answer, ...others]);
+    const toEnglish = mode === "listen" || reverse;
+    const answer = toEnglish ? en : ru;
+    const options = makeOptions(answer, en, pool, toEnglish ? 0 : 1);
 
     app.innerHTML = `
-      ${backBtn(backTo)}
+      ${backBtn(set.backTo)}
       <div class="counter">Вопрос ${i + 1} из ${questions.length} · Верно: ${correct}</div>
       ${mode === "listen"
         ? `<div class="question"><button class="btn primary" id="play">🔊 Прослушать ещё раз</button></div>
@@ -268,7 +551,7 @@ function renderQuiz(key, mode = "quiz", wordsOverride = null) {
         next.onclick = () => {
           i++;
           if (i < questions.length) draw();
-          else resultScreen(correct, questions.length, () => renderQuiz(key, mode, wordsOverride), backTo);
+          else resultScreen(correct, questions.length, () => renderQuiz(arg, mode), set.backTo);
         };
       };
     });
@@ -276,18 +559,20 @@ function renderQuiz(key, mode = "quiz", wordsOverride = null) {
   draw();
 }
 
-// --- Написание ---
-function renderTyping(key) {
-  const questions = shuffle(TOPICS[key].words);
+function renderTyping(arg) {
+  const set = getSet(arg);
+  if (!set || !set.words.length) return emptySet(set);
+  const questions = shuffle(set.words).slice(0, 10);
   let i = 0, correct = 0;
 
   function draw() {
     const [en, ru, ex] = questions[i];
+    const target = en.replace(/^to /, "");
     app.innerHTML = `
-      ${backBtn("topic:" + key)}
+      ${backBtn(set.backTo)}
       <div class="counter">Слово ${i + 1} из ${questions.length} · Верно: ${correct}</div>
       <div class="question">${esc(ru)}</div>
-      <p class="muted" style="text-align:center">Напиши по-английски (${en.replace(/^to /, "").length} букв)</p>
+      <p class="muted" style="text-align:center">Напиши по-английски (${target.length} букв)</p>
       <form id="form">
         <input class="input" id="answer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Твой ответ...">
         <div class="feedback" id="fb"></div>
@@ -302,7 +587,6 @@ function renderTyping(key) {
     input.focus();
 
     document.getElementById("hint").onclick = () => {
-      const target = en.replace(/^to /, "");
       hints = Math.min(hints + 1, target.length);
       input.value = target.slice(0, hints);
       input.focus();
@@ -313,7 +597,7 @@ function renderTyping(key) {
       if (answered) {
         i++;
         if (i < questions.length) draw();
-        else resultScreen(correct, questions.length, () => renderTyping(key), "topic:" + key);
+        else resultScreen(correct, questions.length, () => renderTyping(arg), set.backTo);
         return;
       }
       if (!input.value.trim()) return;
@@ -324,7 +608,7 @@ function renderTyping(key) {
       input.disabled = true;
       fb.className = "feedback " + (ok ? "good" : "bad");
       fb.innerHTML = ok ? "Правильно! 🎉" : `Неверно. Правильно: <b>${esc(en)}</b>`;
-      fb.innerHTML += `<div class="muted" style="font-weight:400;font-style:italic">${esc(ex)}</div>`;
+      if (ex) fb.innerHTML += `<div class="muted" style="font-weight:400;font-style:italic">${esc(ex)}</div>`;
       speak(en);
       document.getElementById("check").textContent = "Дальше →";
       document.getElementById("hint").style.display = "none";
@@ -334,17 +618,18 @@ function renderTyping(key) {
   draw();
 }
 
-// --- Пары ---
-function renderPairs(key) {
-  const set = shuffle(TOPICS[key].words).slice(0, 6);
-  const left = shuffle(set.map(w => w[0]));
-  const right = shuffle(set.map(w => w[1]));
-  const map = Object.fromEntries(set.map(w => [w[0], w[1]]));
+function renderPairs(arg) {
+  const set = getSet(arg);
+  if (!set || set.words.length < 2) return emptySet(set);
+  const chosen = shuffle(set.words).slice(0, 6);
+  const left = shuffle(chosen.map(w => w[0]));
+  const right = shuffle(chosen.map(w => w[1]));
+  const map = Object.fromEntries(chosen.map(w => [w[0], w[1]]));
   let selected = null, done = 0, mistakes = 0;
   const startedAt = Date.now();
 
   app.innerHTML = `
-    ${backBtn("topic:" + key)}
+    ${backBtn(set.backTo)}
     <h1>🔗 Соедини пары</h1>
     <p class="muted">Нажми на английское слово, а затем на его перевод.</p>
     <div class="pairs">
@@ -372,10 +657,10 @@ function renderPairs(key) {
         a.classList.add("done"); b.classList.add("done");
         markAnswer(en, true);
         done++;
-        if (done === set.length) {
+        if (done === chosen.length) {
           const sec = Math.round((Date.now() - startedAt) / 1000);
-          setTimeout(() => resultScreen(set.length, set.length + mistakes, () => renderPairs(key), "topic:" + key), 300);
-          document.getElementById("fb").textContent = `Готово за ${sec} сек.`;
+          setTimeout(() => resultScreen(chosen.length, chosen.length + mistakes, () => renderPairs(arg), set.backTo,
+            `<p>⏱ Время: ${sec} сек. · Ошибок: ${mistakes}</p>`), 300);
         }
       } else {
         mistakes++;
@@ -386,26 +671,120 @@ function renderPairs(key) {
   });
 }
 
-// --- Грамматика ---
+// Игра «На скорость»: 60 секунд, 3 жизни, комбо за серию правильных ответов
+let blitzTimer = null;
+
+function renderBlitz(arg) {
+  const set = getSet(arg);
+  if (!set || !set.words.length) return emptySet(set);
+  const pool = distractorPool(set);
+  let queue = [], score = 0, lives = 3, combo = 0, timeLeft = 60, current = null, locked = false;
+
+  app.innerHTML = `
+    ${backBtn(set.backTo)}
+    <div class="blitz-bar">
+      <span id="b-lives">❤️❤️❤️</span>
+      <span>⏱ <b id="b-time">60</b></span>
+      <span>Очки: <b id="b-score">0</b></span>
+    </div>
+    <div class="progress"><div id="b-progress" style="width:100%;background:var(--primary)"></div></div>
+    <div class="combo" id="b-combo"></div>
+    <div class="question" id="b-word"></div>
+    <div class="options" id="b-options"></div>`;
+
+  function nextWord() {
+    if (!queue.length) queue = shuffle(set.words);
+    current = queue.pop();
+    const reverse = Math.random() < 0.5;
+    const answer = reverse ? current[0] : current[1];
+    document.getElementById("b-word").textContent = reverse ? current[1] : current[0];
+    const opts = makeOptions(answer, current[0], pool, reverse ? 0 : 1);
+    const box = document.getElementById("b-options");
+    box.innerHTML = opts.map(o => `<button class="option" data-val="${esc(o)}">${esc(o)}</button>`).join("");
+    locked = false;
+    box.querySelectorAll(".option").forEach(btn => {
+      btn.onclick = () => {
+        if (locked) return;
+        locked = true;
+        const ok = btn.dataset.val === answer;
+        markAnswer(current[0], ok);
+        if (ok) {
+          combo++;
+          score += 10 * Math.min(1 + Math.floor(combo / 3), 4);
+          btn.classList.add("correct");
+        } else {
+          combo = 0;
+          lives--;
+          btn.classList.add("wrong");
+          box.querySelectorAll(".option").forEach(b => { if (b.dataset.val === answer) b.classList.add("correct"); });
+        }
+        updateHud();
+        if (lives <= 0) return setTimeout(finish, 600);
+        setTimeout(nextWord, ok ? 250 : 900);
+      };
+    });
+  }
+
+  function updateHud() {
+    document.getElementById("b-score").textContent = score;
+    document.getElementById("b-lives").textContent = "❤️".repeat(lives) + "🤍".repeat(3 - lives);
+    const mult = Math.min(1 + Math.floor(combo / 3), 4);
+    document.getElementById("b-combo").textContent = combo >= 3 ? `🔥 Комбо ×${mult} (${combo} подряд)` : "";
+  }
+
+  function finish() {
+    clearInterval(blitzTimer);
+    blitzTimer = null;
+    const record = score > (progress.best[arg] || 0);
+    if (record) progress.best[arg] = score;
+    progress.xp += Math.round(score / 5);
+    touchStreak();
+    save();
+    app.innerHTML = `
+      <div class="card result">
+        <div class="big">${record ? "🏆" : "⚡"}</div>
+        <h1>${score} очков</h1>
+        <p class="muted">${record ? "Новый рекорд!" : `Рекорд: ${progress.best[arg]}`}</p>
+        <p>+${Math.round(score / 5)} ⭐</p>
+        <div class="row" style="justify-content:center">
+          <button class="btn primary" id="again">Ещё раз</button>
+          <button class="btn" data-go="${set.backTo}">Назад</button>
+        </div>
+      </div>`;
+    document.getElementById("again").onclick = () => renderBlitz(arg);
+  }
+
+  clearInterval(blitzTimer);
+  blitzTimer = setInterval(() => {
+    timeLeft--;
+    const t = document.getElementById("b-time");
+    if (!t) { clearInterval(blitzTimer); return; }
+    t.textContent = timeLeft;
+    document.getElementById("b-progress").style.width = (timeLeft / 60) * 100 + "%";
+    if (timeLeft <= 0) finish();
+  }, 1000);
+  nextWord();
+}
+
+// ---------- Грамматика ----------
 function renderGrammar(idx) {
   const g = GRAMMAR[idx];
   app.innerHTML = `
     ${backBtn("home")}
     <h1>${esc(g.title)}</h1>
     <div class="card theory">${g.theory}</div>
-    <div style="margin-top:16px"><button class="btn primary" id="start">Начать упражнения →</button></div>`;
-  document.getElementById("start").onclick = () => grammarExercises(idx);
+    <div style="margin-top:16px"><button class="btn primary" data-go="gex:${idx}">Начать упражнения →</button></div>`;
 }
 
-function grammarExercises(idx) {
-  const g = GRAMMAR[idx];
-  const qs = shuffle(g.exercises);
+// Упражнения «вставь слово» — для уроков грамматики и правил к рассказам
+function runExercises(exercises, backTo, onFinish, again) {
+  const qs = shuffle(exercises);
   let i = 0, correct = 0;
 
   function draw() {
     const [sentence, opts, ans] = qs[i];
     app.innerHTML = `
-      ${backBtn("grammar:" + idx)}
+      ${backBtn(backTo)}
       <div class="counter">Задание ${i + 1} из ${qs.length} · Верно: ${correct}</div>
       <div class="question">${esc(sentence).replace("___", "<u>&nbsp;&nbsp;?&nbsp;&nbsp;</u>")}</div>
       <div class="options">${opts.map((o, k) => `<button class="option" data-k="${k}">${esc(o)}</button>`).join("")}</div>
@@ -421,7 +800,7 @@ function grammarExercises(idx) {
         if (!ok) btn.classList.add("wrong");
         if (ok) { correct++; progress.xp += 10; }
         touchStreak(); save();
-        const full = sentence.replace("___", opts[ans]);
+        const full = sentence.replace(/ \(.*\)$/, "").replace("___", opts[ans]);
         const fb = document.getElementById("fb");
         fb.className = "feedback " + (ok ? "good" : "bad");
         fb.textContent = (ok ? "Правильно! " : "Неверно. ") + full;
@@ -431,9 +810,8 @@ function grammarExercises(idx) {
         next.onclick = () => {
           i++;
           if (i < qs.length) return draw();
-          progress.grammar[idx] = Math.max(progress.grammar[idx] || 0, correct);
-          save();
-          resultScreen(correct, qs.length, () => grammarExercises(idx), "grammar:" + idx);
+          onFinish(correct);
+          resultScreen(correct, qs.length, again, backTo);
         };
       };
     });
@@ -449,32 +827,56 @@ function navigate(route) {
 
 function render() {
   if ("speechSynthesis" in window) speechSynthesis.cancel();
+  clearInterval(blitzTimer);
+  closeSheet();
+  currentStory = null;
   const [view, arg] = (location.hash.slice(1) || "home").split(":");
+  const n = Number(arg);
   window.scrollTo(0, 0);
-  if (arg !== undefined && ["topic", "cards", "quiz", "typing", "pairs", "listen"].includes(view) && !TOPICS[arg]) return renderHome();
   switch (view) {
-    case "topic": return renderTopic(arg);
+    case "topic": return TOPICS[arg] ? renderTopic(arg) : renderHome();
     case "cards": return renderCards(arg);
     case "quiz": return renderQuiz(arg, "quiz");
     case "listen": return renderQuiz(arg, "listen");
     case "typing": return renderTyping(arg);
     case "pairs": return renderPairs(arg);
-    case "grammar": return GRAMMAR[arg] ? renderGrammar(Number(arg)) : renderHome();
-    case "review": {
-      const words = allWords().filter(w => progress.words[w[0]] !== undefined && !isLearned(w[0]));
-      return words.length >= 1 ? renderQuiz(null, "quiz", words) : renderHome();
-    }
+    case "blitz": return renderBlitz(arg);
+    case "mywords": return renderMyWords();
+    case "story": return STORIES[n] ? renderStory(n) : renderHome();
+    case "story-done": return STORIES[n] ? renderStoryDone(n) : renderHome();
+    case "srule":
+      if (!STORIES[n]) return renderHome();
+      return runExercises(STORIES[n].exercises, "story-done:" + n, () => {}, () => render());
+    case "grammar": return GRAMMAR[n] ? renderGrammar(n) : renderHome();
+    case "gex":
+      if (!GRAMMAR[n]) return renderHome();
+      return runExercises(GRAMMAR[n].exercises, "grammar:" + n, correct => {
+        progress.grammar[n] = Math.max(progress.grammar[n] || 0, correct);
+        save();
+      }, () => render());
     default: return renderHome();
   }
 }
 
 document.addEventListener("click", e => {
   const go = e.target.closest("[data-go]");
-  if (go) { navigate(go.dataset.go); return; }
+  if (go) { if (go.dataset.go) navigate(go.dataset.go); return; }
   const say = e.target.closest("[data-say]");
-  if (say) { e.stopPropagation(); speak(say.dataset.say); }
+  if (say) { e.stopPropagation(); speak(say.dataset.say); return; }
+  const unsave = e.target.closest("[data-unsave]");
+  if (unsave) {
+    delete progress.saved[unsave.dataset.unsave];
+    save();
+    if (currentStory !== null) refreshStoryWords();
+    else render();
+    return;
+  }
+  const w = e.target.closest(".w");
+  if (w && currentStory !== null) { openSheet(w.dataset.w); return; }
+  if (!sheet.hidden && e.target.isConnected && !sheet.contains(e.target)) closeSheet();
 });
 
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
 window.addEventListener("hashchange", render);
 updateStats();
 render();
