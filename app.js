@@ -133,9 +133,9 @@ function topicWords() {
   return Object.values(TOPICS).flatMap(t => t.words);
 }
 
-function savedList(storyIdx) {
+function savedList(storyId) {
   return Object.values(progress.saved)
-    .filter(s => storyIdx === undefined || s.story === storyIdx)
+    .filter(s => storyId === undefined || s.story === storyId)
     .map(s => [s.en, s.ru, s.ex]);
 }
 
@@ -158,7 +158,7 @@ function getSet(arg) {
   }
   const m = /^s(\d+)$/.exec(arg || "");
   if (m && STORIES[m[1]]) {
-    return { words: savedList(Number(m[1])), title: STORIES[m[1]].title, backTo: "story-done:" + m[1] };
+    return { words: savedList(STORIES[m[1]].id), title: STORIES[m[1]].title, backTo: "story-done:" + m[1] };
   }
   return null;
 }
@@ -208,28 +208,57 @@ function resultScreen(correct, total, again, backTo, extra = "") {
 }
 
 // ---------- Главная ----------
-function storyUnlocked(i) { return i === 0 || !!progress.stories[i - 1]; }
+// Прогресс чтения хранится по id рассказа, чтобы новые рассказы не сбивали его
+function isDone(i) { return !!(STORIES[i] && progress.stories[STORIES[i].id]); }
+function storyUnlocked(i) { return i === 0 || isDone(i - 1); }
+function doneCount() { return STORIES.filter((_, i) => isDone(i)).length; }
+function nextStoryIndex() { const i = STORIES.findIndex((_, k) => !isDone(k)); return i; }
 
 const LEVEL_NAMES = {
-  "A1": "Начальный — самые лёгкие",
-  "A1+": "Начальный+",
-  "A2": "Элементарный",
-  "B1": "Средний",
-  "B2": "Выше среднего",
-  "C1": "Продвинутый",
-  "C1–C2": "Самый сложный",
+  A1: "Начальный — самые первые шаги",
+  A2: "Элементарный",
+  B1: "Средний",
+  B2: "Выше среднего",
+  C1: "Продвинутый",
+  C2: "Свободное владение — финиш 🏁",
 };
 
-// Группируем рассказы по уровню (A1, A2, B1...) в порядке сложности
+// Группируем рассказы по уровню (A1 … C2) в порядке сложности
 function storyLevels() {
   const groups = [];
   STORIES.forEach((s, i) => {
-    const code = s.level.split("·")[0].trim();
     const last = groups[groups.length - 1];
-    if (last && last[0] === code) last[1].push(i);
-    else groups.push([code, [i]]);
+    if (last && last[0] === s.level) last[1].push(i);
+    else groups.push([s.level, [i]]);
   });
   return groups;
+}
+
+// Карта пути от A1 до C2
+function journeyCard() {
+  const done = doneCount();
+  const total = STORIES.length;
+  const next = nextStoryIndex();
+  return `
+    <div class="card journey">
+      <div class="row" style="justify-content:space-between">
+        <b>🗺 Путь от A1 до C2</b>
+        <span class="muted">${done} из ${total} рассказов</span>
+      </div>
+      <div class="progress big-progress"><div style="width:${(done / total) * 100}%"></div></div>
+      <div class="path">
+        ${storyLevels().map(([code, items]) => {
+          const d = items.filter(isDone).length;
+          const state = d === items.length ? "done" : items.some(storyUnlocked) ? "current" : "";
+          return `<div class="step ${state}"><span>${state === "done" ? "✅" : esc(code)}</span><small>${d}/${items.length}</small></div>`;
+        }).join('<div class="step-line"></div>')}
+        <div class="step-line"></div>
+        <div class="step ${done === total ? "done" : ""}"><span>🏁</span><small>финиш</small></div>
+      </div>
+      ${next >= 0
+        ? `<button class="btn primary" data-go="story:${next}" style="margin-top:12px">▶ Продолжить: ${esc(STORIES[next].title)} (${esc(STORIES[next].level)})</button>`
+        : `<button class="btn primary" data-go="finish" style="margin-top:12px">🏆 Мой сертификат</button>`}
+    </div>`;
 }
 
 function renderHome() {
@@ -246,7 +275,8 @@ function renderHome() {
       </div>` : ""}
 
     <h2>📚 Чтение книги</h2>
-    <p class="muted" style="margin-top:-6px">Рассказы идут от самого лёгкого к сложному. К каждому есть правило.</p>
+    <p class="muted" style="margin-top:-6px">Потихоньку, шаг за шагом: от самых простых рассказов (A1) до самых сложных (C2). К каждому есть правило.</p>
+    ${journeyCard()}
     <div class="grid">
       <button class="tile" data-go="mywords">
         <div class="icon">⭐</div>
@@ -262,7 +292,7 @@ function renderHome() {
           const open = storyUnlocked(i);
           return `
             <button class="tile ${open ? "" : "locked"}" data-go="${open ? "story:" + i : ""}" ${open ? "" : "disabled"}>
-              <div class="sub">${open ? (progress.stories[i] ? "✅ Прочитано" : "📖 Рассказ " + (i + 1)) : "🔒 Сначала прочитай предыдущий"}</div>
+              <div class="sub">${open ? (isDone(i) ? "✅ Прочитано" : "📖 Рассказ " + (i + 1)) : "🔒 Сначала прочитай предыдущий"}</div>
               <div class="name">${esc(s.title)}</div>
               <div class="sub">${esc(s.ru)}</div>
             </button>`;
@@ -365,11 +395,11 @@ function renderStory(i) {
   currentStory = i;
   app.innerHTML = `
     ${backBtn("home")}
-    <div class="counter">Рассказ ${i + 1} из ${STORIES.length} · ${esc(s.level)}</div>
+    <div class="counter"><span class="level-code">${esc(s.level)}</span> Рассказ ${i + 1} из ${STORIES.length} · ${esc(LEVEL_NAMES[s.level] || "")}</div>
     <h1>${wrapWords(s.title)}</h1>
     <p class="muted" style="margin-top:0">${esc(s.ru)}</p>
 
-    <details class="card rule" ${progress.stories[i] ? "" : "open"}>
+    <details class="card rule" ${isDone(i) ? "" : "open"}>
       <summary>📘 Правило: ${esc(s.rule.title)}</summary>
       <div class="theory">${s.rule.html}</div>
     </details>
@@ -457,7 +487,7 @@ function refreshStoryWords() {
   if (currentStory === null) return;
   const box = document.getElementById("story-words");
   if (box) {
-    const words = savedList(currentStory);
+    const words = savedList(STORIES[currentStory].id);
     box.innerHTML = words.length
       ? wordList(words, true)
       : `<p class="muted" style="margin:0">Пока пусто. Нажимай на незнакомые слова в тексте.</p>`;
@@ -478,7 +508,7 @@ function openSheet(word) {
   const isSaved = () => !!progress.saved[info.base];
   // Нажал на слово — значит не знает: сразу добавляем в «Мои слова»
   if (!isSaved()) {
-    progress.saved[info.base] = { en: info.base, ru: info.ru, ex: sentenceWith(currentStory, info.word), story: currentStory };
+    progress.saved[info.base] = { en: info.base, ru: info.ru, ex: sentenceWith(currentStory, info.word), story: STORIES[currentStory].id };
     touchStreak();
     save();
   }
@@ -500,7 +530,7 @@ function openSheet(word) {
     document.getElementById("sheet-close").onclick = closeSheet;
     document.getElementById("sheet-save").onclick = () => {
       if (isSaved()) delete progress.saved[info.base];
-      else progress.saved[info.base] = { en: info.base, ru: info.ru, ex: sentenceWith(currentStory, info.word), story: currentStory };
+      else progress.saved[info.base] = { en: info.base, ru: info.ru, ex: sentenceWith(currentStory, info.word), story: STORIES[currentStory].id };
       save();
       draw();
       refreshStoryWords();
@@ -517,21 +547,24 @@ function closeSheet() { if (sheet) sheet.hidden = true; }
 function renderStoryDone(i) {
   if (!storyUnlocked(i)) return renderHome();
   const s = STORIES[i];
-  const first = !progress.stories[i];
+  const first = !isDone(i);
   if (first) {
-    progress.stories[i] = true;
+    progress.stories[s.id] = true;
     progress.xp += 50;
     touchStreak();
     save();
   }
-  const words = savedList(i);
+  const words = savedList(s.id);
   const next = STORIES[i + 1];
+  const levelDone = next && next.level !== s.level;
   app.innerHTML = `
     ${backBtn("story:" + i, "← К тексту")}
     <div class="card result">
       <div class="big">📖🎉</div>
       <h1>Рассказ «${esc(s.title)}» прочитан!</h1>
       ${first ? `<p class="muted">+50 ⭐ ${next ? "· Открыт следующий рассказ" : ""}</p>` : ""}
+      ${levelDone ? `<p class="level-up">🎊 Уровень ${esc(s.level)} пройден! Дальше — ${esc(next.level)}: ${esc(LEVEL_NAMES[next.level] || "")}</p>` : ""}
+      <p class="muted">Пройдено ${doneCount()} из ${STORIES.length} рассказов до финиша 🏁</p>
     </div>
 
     <h2>1. Закрепи правило</h2>
@@ -546,9 +579,37 @@ function renderStoryDone(i) {
       : `<div class="card"><p style="margin:0">Ты не открыл ни одного перевода — значит, знаешь все слова! 💪</p></div>`}
 
     <div class="row" style="margin-top:24px">
-      ${next ? `<button class="btn primary" data-go="story:${i + 1}">Следующий рассказ →</button>` : `<p class="muted">Это был последний рассказ. Скоро будут новые!</p>`}
+      ${next ? `<button class="btn primary" data-go="story:${i + 1}">Следующий рассказ →</button>`
+        : doneCount() === STORIES.length ? `<button class="btn primary" data-go="finish">🏁 К финишу!</button>` : ""}
       <button class="btn" data-go="home">На главную</button>
     </div>`;
+}
+
+function renderFinish() {
+  if (doneCount() < STORIES.length) return renderHome();
+  const learned = Object.values(progress.words).filter(v => v >= LEARNED_AT).length;
+  const name = progress.settings.name || "";
+  app.innerHTML = `
+    ${backBtn("home")}
+    <div class="card certificate">
+      <div class="big">🏆</div>
+      <div class="muted">СЕРТИФИКАТ</div>
+      <h1>Путь от A1 до C2 пройден!</h1>
+      <p class="cert-name">${name ? esc(name) : "Ваше имя"}</p>
+      <p>прочитал(а) все рассказы (${STORIES.length}), выучил(а) слов: ${learned}, набрал(а) ${progress.xp} ⭐</p>
+      <div class="cert-levels">${["A1", "A2", "B1", "B2", "C1", "C2"].map(l => `<span class="level-code">${l} ✓</span>`).join("")}</div>
+      <p class="muted">${new Date().toLocaleDateString("ru-RU")}</p>
+    </div>
+    <div class="row no-print" style="margin-top:16px">
+      <input class="input" id="cert-name" placeholder="Впиши имя для сертификата" value="${esc(name)}" style="flex:1;min-width:200px">
+      <button class="btn primary" id="cert-save">Сохранить имя</button>
+      <button class="btn" onclick="window.print()">🖨 Распечатать</button>
+    </div>`;
+  document.getElementById("cert-save").onclick = () => {
+    progress.settings.name = document.getElementById("cert-name").value.trim();
+    save();
+    renderFinish();
+  };
 }
 
 function renderMyWords() {
@@ -959,6 +1020,7 @@ function render() {
     case "pairs": return renderPairs(arg);
     case "blitz": return renderBlitz(arg);
     case "mywords": return renderMyWords();
+    case "finish": return renderFinish();
     case "story": return STORIES[n] ? renderStory(n) : renderHome();
     case "story-done": return STORIES[n] ? renderStoryDone(n) : renderHome();
     case "srule":

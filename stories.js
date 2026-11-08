@@ -67,6 +67,10 @@ const COMMON_DICT = {
   eats: ["eat", "есть, кушать", "форма для he / she / it"],
   tom: "Том (имя)",
   dog: "собака",
+  cat: "кошка, кот",
+  go: "идти, ехать",
+  our: "наш",
+  only: "только",
   have: "иметь; вспомогательный глагол (have + V3 — Present Perfect)",
   be: "быть",
   will: "вспомогательное слово будущего времени («I will help» — я помогу)",
@@ -90,9 +94,10 @@ const COMMON_DICT = {
 // text: [английское предложение, перевод]
 const STORIES = [
   {
+    id: "cat",
     title: "My Cat",
     ru: "Мой кот",
-    level: "A1 · очень легко",
+    level: "A1",
     rule: {
       title: "Глагол to be и слова my / his / her",
       html: `
@@ -133,9 +138,10 @@ const STORIES = [
     ],
   },
   {
+    id: "anna",
     title: "Anna's Day",
     ru: "День Анны",
-    level: "A1 · легко",
+    level: "A1",
     rule: {
       title: "Present Simple: окончание -s у he / she / it",
       html: `
@@ -184,9 +190,10 @@ const STORIES = [
     ],
   },
   {
+    id: "shop",
     title: "At the Shop",
     ru: "В магазине",
-    level: "A1 · легко",
+    level: "A1",
     rule: {
       title: "Артикли a / an / the и слово some",
       html: `
@@ -232,9 +239,10 @@ const STORIES = [
     ],
   },
   {
+    id: "rainy",
     title: "A Rainy Sunday",
     ru: "Дождливое воскресенье",
-    level: "A1+ · немного сложнее",
+    level: "A1",
     rule: {
       title: "Present Continuous: что происходит прямо сейчас",
       html: `
@@ -279,9 +287,10 @@ const STORIES = [
     ],
   },
   {
+    id: "trip",
     title: "The Trip to the Sea",
     ru: "Поездка на море",
-    level: "A2 · средне",
+    level: "A2",
     rule: {
       title: "Past Simple: прошедшее время",
       html: `
@@ -340,9 +349,10 @@ const STORIES = [
     ],
   },
   {
+    id: "key",
     title: "The Lost Key",
     ru: "Потерянный ключ",
-    level: "A2 · средне",
+    level: "A2",
     rule: {
       title: "Будущее время: will и be going to",
       html: `
@@ -400,9 +410,10 @@ const STORIES = [
     ],
   },
   {
+    id: "job",
     title: "The Job Interview",
     ru: "Собеседование",
-    level: "B1 · средний",
+    level: "B1",
     rule: {
       title: "Present Perfect: have / has + 3-я форма глагола",
       html: `
@@ -478,9 +489,10 @@ const STORIES = [
     ],
   },
   {
+    id: "neighbour",
     title: "A Strange Neighbour",
     ru: "Странный сосед",
-    level: "B1 · средний",
+    level: "B1",
     rule: {
       title: "Past Continuous и Past Simple вместе",
       html: `
@@ -554,9 +566,10 @@ const STORIES = [
     ],
   },
   {
+    id: "rich",
     title: "If I Were Rich",
     ru: "Если бы я была богатой",
-    level: "B2 · выше среднего",
+    level: "B2",
     rule: {
       title: "Условные предложения: 1-й и 2-й тип",
       html: `
@@ -637,9 +650,10 @@ const STORIES = [
     ],
   },
   {
+    id: "painting",
     title: "The Stolen Painting",
     ru: "Украденная картина",
-    level: "B2 · выше среднего",
+    level: "B2",
     rule: {
       title: "Пассивный залог (Passive Voice)",
       html: `
@@ -741,9 +755,10 @@ const STORIES = [
     ],
   },
   {
+    id: "lighthouse",
     title: "The Lighthouse Keeper",
     ru: "Смотритель маяка",
-    level: "C1 · продвинутый",
+    level: "C1",
     rule: {
       title: "Past Perfect, 3-й тип условия и инверсия",
       html: `
@@ -849,9 +864,10 @@ const STORIES = [
     ],
   },
   {
+    id: "paradox",
     title: "The Paradox of Choice",
     ru: "Парадокс выбора",
-    level: "C1–C2 · самый сложный",
+    level: "C2",
     rule: {
       title: "Причастные обороты и связки академического стиля",
       html: `
@@ -980,4 +996,778 @@ const STORIES = [
       ["Paradoxical ___ it may seem, constraints help.", ["so", "as", "like"], 1],
     ],
   },
+  {
+    id: "hello",
+    title: "Hello, I'm Sam",
+    ru: "Привет, я Сэм",
+    level: "A1",
+    rule: {
+      title: "I am… / This is… — знакомимся",
+      html: `
+        <p>Чтобы рассказать о себе, говорим <b>I am</b> (коротко <b>I'm</b>): <i>I am Sam. I'm eight.</i></p>
+        <p>Чтобы показать кого-то или что-то: <b>This is…</b> — Это…: <i>This is my mom.</i></p>
+        <p>Возраст говорим просто числом: <i>I am eight.</i> — Мне восемь (дословно «я есть восемь»).</p>
+        <p>💡 <b>Правило чтения:</b> буква <b>a</b> в коротком слове, которое кончается на согласную, читается как широкое [э]: <i>Sam, dad, cat</i>.</p>`,
+    },
+    text: [
+      ["Hello!", "Привет!"],
+      ["I am Sam.", "Я Сэм."],
+      ["I am eight.", "Мне восемь лет."],
+      ["I am a boy.", "Я мальчик."],
+      ["This is my mom.", "Это моя мама."],
+      ["This is my dad.", "Это мой папа."],
+      ["My dog is Rex.", "Мою собаку зовут Рекс."],
+      ["Rex is funny.", "Рекс смешной."],
+    ],
+    dict: {
+      hello: "привет, здравствуй",
+      "i'm": ["I am", "я есть", "сокращение от I am"],
+      sam: "Сэм (имя)",
+      eight: "восемь",
+      boy: "мальчик",
+      rex: "Рекс (кличка)",
+      funny: "смешной, забавный",
+    },
+    exercises: [
+      ["I ___ Sam.", ["am", "is", "are"], 0],
+      ["___ is my mom.", ["This", "I", "Am"], 0],
+      ["My dog ___ funny.", ["am", "is", "are"], 1],
+    ],
+  },
+  {
+    id: "family",
+    title: "My Family",
+    ru: "Моя семья",
+    level: "A1",
+    rule: {
+      title: "have got / has got — у меня есть",
+      html: `
+        <p>По-русски «у меня есть», а по-английски «я имею»: <b>I have got</b> a bike.</p>
+        <table>
+          <tr><td>I / you / we / they</td><td><b>have got</b></td><td>We have got a cat.</td></tr>
+          <tr><td>he / she / it</td><td><b>has got</b></td><td>She has got a doll.</td></tr>
+        </table>
+        <p>💡 <b>Правило чтения:</b> буква <b>i</b> в коротком слове читается как [и]: <i>big, six, sister</i>, а если на конце есть немая <b>e</b> — как [ай]: <i>bike, nine</i>.</p>`,
+    },
+    text: [
+      ["I have got a big family.", "У меня большая семья."],
+      ["I have got a mom, a dad and a sister.", "У меня есть мама, папа и сестра."],
+      ["My sister is six.", "Моей сестре шесть лет."],
+      ["She has got a doll and a ball.", "У неё есть кукла и мяч."],
+      ["I have got a bike.", "У меня есть велосипед."],
+      ["My grandma has got a garden.", "У моей бабушки есть сад."],
+      ["We have got a cat too.", "А ещё у нас есть кошка."],
+      ["I love my family!", "Я люблю свою семью!"],
+    ],
+    dict: {
+      got: "«have got» — иметь, «у меня есть»",
+      has: ["have", "иметь", "форма для he / she / it («has got» — у него/неё есть)"],
+      family: "семья",
+      six: "шесть",
+      doll: "кукла",
+      ball: "мяч",
+      bike: "велосипед",
+      grandma: "бабушка",
+      garden: "сад",
+      cat: "кошка, кот",
+      too: "тоже, также",
+      love: "любить",
+    },
+    exercises: [
+      ["I ___ got a bike.", ["have", "has", "am"], 0],
+      ["She ___ got a doll.", ["have", "has", "is"], 1],
+      ["We have ___ a cat.", ["got", "get", "is"], 0],
+    ],
+  },
+  {
+    id: "frog",
+    title: "Can You Swim?",
+    ru: "Ты умеешь плавать?",
+    level: "A1",
+    rule: {
+      title: "can / can't — умею, могу / не умею",
+      html: `
+        <p><b>can</b> + глагол — «умею, могу»: <i>He <b>can</b> jump.</i></p>
+        <p><b>can't</b> (= cannot) — «не умею, не могу»: <i>He <b>can't</b> fly.</i></p>
+        <p>Вопрос — ставим <b>can</b> вперёд: <i><b>Can</b> you swim?</i> Ответ: <i>Yes, I can. / No, I can't.</i></p>
+        <p>⚠️ После can глагол без <b>to</b> и без <b>-s</b>: <i>he can swim</i> (не «can swims»).</p>
+        <p>💡 <b>Правило чтения:</b> <b>ee</b> и <b>ea</b> читаются как долгое [и:]: <i>sees, teach</i>.</p>`,
+    },
+    text: [
+      ["Ben is a little frog.", "Бен — маленький лягушонок."],
+      ["He can jump and swim.", "Он умеет прыгать и плавать."],
+      ["He can't fly.", "Он не умеет летать."],
+      ["One day Ben sees a bird.", "Однажды Бен видит птицу."],
+      ["“Can you swim?” asks Ben.", "«Ты умеешь плавать?» — спрашивает Бен."],
+      ["“No, I can't,” says the bird. “But I can fly!”", "«Нет, не умею, — говорит птица. — Зато я умею летать!»"],
+      ["“Can you teach me?” asks Ben.", "«Можешь меня научить?» — спрашивает Бен."],
+      ["The bird laughs: “Frogs can't fly, but you can be my friend!”", "Птица смеётся: «Лягушки не умеют летать, но ты можешь быть моим другом!»"],
+    ],
+    dict: {
+      can: "мочь, уметь",
+      "can't": ["cannot", "не мочь, не уметь", "сокращение от cannot"],
+      swim: "плавать",
+      ben: "Бен (имя)",
+      frog: "лягушка",
+      frogs: ["frog", "лягушка", "множественное число"],
+      jump: "прыгать",
+      fly: "летать",
+      sees: ["see", "видеть", "форма для he / she / it"],
+      bird: "птица",
+      no: "нет",
+      teach: "учить, обучать",
+      me: "меня, мне",
+      laughs: ["laugh", "смеяться", "форма для he / she / it"],
+    },
+    exercises: [
+      ["Ben ___ swim.", ["can", "cans", "is"], 0],
+      ["The bird ___ swim. (не умеет)", ["can", "can't", "isn't"], 1],
+      ["___ you fly?", ["Can", "Are", "Do"], 0],
+      ["He can ___.", ["jumps", "jump", "to jump"], 1],
+    ],
+  },
+  {
+    id: "pet",
+    title: "The Best Pet",
+    ru: "Самый лучший питомец",
+    level: "A2",
+    rule: {
+      title: "Сравнение: bigger, the biggest",
+      html: `
+        <p>Короткие прилагательные: <b>-er</b> — «более», <b>the -est</b> — «самый»:</p>
+        <table>
+          <tr><td>small</td><td>smaller</td><td>the smallest</td></tr>
+          <tr><td>big</td><td>bi<b>gg</b>er</td><td>the bi<b>gg</b>est</td></tr>
+          <tr><td>easy</td><td>eas<b>i</b>er</td><td>the eas<b>i</b>est</td></tr>
+          <tr><td>good</td><td><b>better</b></td><td><b>the best</b></td></tr>
+        </table>
+        <p>Сравниваем через <b>than</b> — «чем»: <i>A dog is bigger <b>than</b> a cat.</i></p>
+        <p>💡 <b>Правило чтения:</b> окончание <b>-er</b> читается коротким безударным [э]: <i>bigger</i> [бигэ]; <b>-est</b> — [ист].</p>`,
+    },
+    text: [
+      ["Mia wants a pet, but which pet is the best?", "Мия хочет питомца, но какой питомец лучше всех?"],
+      ["A dog is bigger than a cat, and it is friendlier too.", "Собака больше кошки, и она к тому же дружелюбнее."],
+      ["A cat is quieter than a dog, and it is cleaner.", "Кошка тише собаки, и она чистоплотнее."],
+      ["A hamster is the smallest pet, but it sleeps all day.", "Хомяк — самый маленький питомец, но он спит весь день."],
+      ["A parrot is the noisiest pet in the shop!", "Попугай — самый шумный питомец в магазине!"],
+      ["A fish is the easiest pet, but you can't play with it.", "Рыбка — самый простой питомец, но с ней нельзя поиграть."],
+      ["Mia thinks for a long time.", "Мия долго думает."],
+      ["Finally she chooses a puppy, because a puppy is the funniest friend of all.", "Наконец она выбирает щенка, потому что щенок — самый весёлый друг на свете."],
+    ],
+    dict: {
+      best: ["good", "хороший", "превосходная степень: the best — самый лучший"],
+      pet: "домашний питомец",
+      mia: "Мия (имя)",
+      wants: ["want", "хотеть", "форма для he / she / it"],
+      which: "который, какой",
+      bigger: ["big", "большой", "сравнительная степень: больше"],
+      than: "чем",
+      friendlier: ["friendly", "дружелюбный", "сравнительная степень: дружелюбнее"],
+      too: "тоже, к тому же",
+      quieter: ["quiet", "тихий", "сравнительная степень: тише"],
+      cleaner: ["clean", "чистый", "сравнительная степень: чище"],
+      hamster: "хомяк",
+      smallest: ["small", "маленький", "превосходная степень: самый маленький"],
+      sleeps: ["sleep", "спать", "форма для he / she / it"],
+      parrot: "попугай",
+      noisiest: ["noisy", "шумный", "превосходная степень: самый шумный"],
+      shop: "магазин",
+      easiest: ["easy", "лёгкий, простой", "превосходная степень: самый лёгкий"],
+      "can't": ["cannot", "не мочь", "сокращение от cannot"],
+      play: "играть",
+      thinks: ["think", "думать", "форма для he / she / it"],
+      long: "долгий, длинный",
+      time: "время («for a long time» — долго)",
+      finally: "наконец",
+      chooses: ["choose", "выбирать", "форма для he / she / it"],
+      puppy: "щенок",
+      because: "потому что",
+      funniest: ["funny", "смешной, весёлый", "превосходная степень: самый весёлый"],
+    },
+    exercises: [
+      ["A dog is ___ than a cat.", ["big", "bigger", "biggest"], 1],
+      ["A hamster is the ___ pet.", ["small", "smaller", "smallest"], 2],
+      ["A puppy is the ___ friend.", ["good", "better", "best"], 2],
+      ["A cat is quieter ___ a dog.", ["then", "than", "that"], 1],
+    ],
+  },
+  {
+    id: "zoo",
+    title: "A Day at the Zoo",
+    ru: "День в зоопарке",
+    level: "A2",
+    rule: {
+      title: "Past Simple: вопросы и отрицания с did",
+      html: `
+        <p>В прошедшем времени вопрос и отрицание строим с помощью <b>did</b>, а глагол возвращается в начальную форму:</p>
+        <table>
+          <tr><td>Вопрос</td><td><b>Did</b> you <b>see</b> lions?</td><td>(не «saw»!)</td></tr>
+          <tr><td>Отрицание</td><td>Max <b>didn't like</b> snakes.</td><td>(не «liked»!)</td></tr>
+          <tr><td>Краткий ответ</td><td>Yes, we <b>did</b>. / No, we <b>didn't</b>.</td><td></td></tr>
+        </table>
+        <p>Неправильные глаголы из текста: <i>go → went, see → saw, feed → fed, take → took, think → thought, steal → stole</i>.</p>
+        <p>💡 <b>Правило чтения:</b> <b>oo</b> чаще всего — долгое [у:]: <i>zoo, food</i>; <b>ph</b> читается как [ф]: <i>photo</i>.</p>`,
+    },
+    text: [
+      ["Yesterday our class went to the zoo.", "Вчера наш класс ходил в зоопарк."],
+      ["Did we see lions? Yes, we did!", "Видели ли мы львов? Да, видели!"],
+      ["The lions were sleeping in the sun.", "Львы спали на солнышке."],
+      ["Did we see elephants? No, we didn't, because they were inside.", "А слонов видели? Нет, потому что они были внутри."],
+      ["We fed the goats and took a lot of photos.", "Мы покормили коз и сделали много фотографий."],
+      ["Max didn't like the snakes, but I thought they were beautiful.", "Максу не понравились змеи, а мне они показались красивыми."],
+      ["At lunch a cheeky monkey stole my sandwich!", "За обедом нахальная обезьянка стащила мой бутерброд!"],
+      ["Did I cry? No, I didn't — I laughed with everyone.", "Я заплакал? Нет — я смеялся вместе со всеми."],
+    ],
+    dict: {
+      zoo: "зоопарк",
+      yesterday: "вчера",
+      our: "наш",
+      class: "класс",
+      went: ["go", "идти, ехать", "прошедшее время (неправильный глагол)"],
+      did: ["do", "делать; вспомогательный глагол", "прошедшее время — для вопросов и отрицаний"],
+      see: "видеть",
+      yes: "да",
+      lions: ["lion", "лев", "множественное число"],
+      sleeping: ["sleep", "спать", "форма -ing"],
+      sun: "солнце",
+      elephants: ["elephant", "слон", "множественное число"],
+      no: "нет",
+      "didn't": ["did not", "не (отрицание в прошедшем)", "сокращение от did not"],
+      because: "потому что",
+      inside: "внутри",
+      fed: ["feed", "кормить", "прошедшее время (неправильный глагол)"],
+      goats: ["goat", "коза", "множественное число"],
+      took: ["take", "брать; «take photos» — фотографировать", "прошедшее время (неправильный глагол)"],
+      lot: "«a lot of» — много",
+      photos: ["photo", "фотография", "множественное число"],
+      max: "Макс (имя)",
+      like: "нравиться",
+      snakes: ["snake", "змея", "множественное число"],
+      thought: ["think", "думать", "прошедшее время (неправильный глагол)"],
+      beautiful: "красивый",
+      lunch: "обед",
+      cheeky: "нахальный, озорной",
+      monkey: "обезьяна",
+      stole: ["steal", "красть", "прошедшее время (неправильный глагол)"],
+      sandwich: "бутерброд, сэндвич",
+      cry: "плакать",
+      laughed: ["laugh", "смеяться", "прошедшее время (-ed)"],
+      everyone: "все, каждый",
+    },
+    exercises: [
+      ["___ you see the lions?", ["Do", "Did", "Was"], 1],
+      ["Max didn't ___ the snakes.", ["like", "liked", "likes"], 0],
+      ["We ___ the goats.", ["feed", "fed", "feeded"], 1],
+      ["Did you cry? No, I ___.", ["don't", "didn't", "wasn't"], 1],
+    ],
+  },
+  {
+    id: "newgirl",
+    title: "The New Girl",
+    ru: "Новенькая",
+    level: "B1",
+    rule: {
+      title: "Придаточные: who, which, that, where, whose",
+      html: `
+        <p>Эти слова соединяют две части предложения и переводятся как «который, где, чей»:</p>
+        <table>
+          <tr><td><b>who</b></td><td>о людях</td><td>the person <b>who</b> draws</td></tr>
+          <tr><td><b>which</b></td><td>о предметах, животных</td><td>the notebook <b>which</b> she had</td></tr>
+          <tr><td><b>that</b></td><td>о людях и предметах (разговорное)</td><td>dragons <b>that</b> looked alive</td></tr>
+          <tr><td><b>where</b></td><td>о месте</td><td>a club <b>where</b> students draw</td></tr>
+          <tr><td><b>whose</b></td><td>чей</td><td>a girl <b>whose</b> name was Aiko</td></tr>
+        </table>
+        <p>💡 <b>Правило чтения:</b> <b>ew</b> читается как [ью]: <i>new</i>; <b>ir</b> — как [ё]: <i>girl, first</i>.</p>`,
+    },
+    text: [
+      ["On Monday a new girl, whose name was Aiko, joined our class.", "В понедельник в наш класс пришла новенькая девочка, которую звали Айко."],
+      ["She came from Japan, which is a country I have always wanted to visit.", "Она приехала из Японии — страны, в которой я всегда мечтал побывать."],
+      ["At first she was shy and didn't speak to anyone.", "Сначала она стеснялась и ни с кем не разговаривала."],
+      ["Then I noticed the notebook which she was drawing in.", "Потом я заметил блокнот, в котором она рисовала."],
+      ["It was full of amazing dragons that looked almost alive.", "Он был полон удивительных драконов, которые казались почти живыми."],
+      ["I told her about a club where students create comics together.", "Я рассказал ей о клубе, где ученики вместе рисуют комиксы."],
+      ["Now Aiko is the person who draws the best pictures in our club.", "Теперь Айко — та, кто рисует лучшие картинки в нашем клубе."],
+      ["Sometimes the friends who change our lives arrive when we least expect them.", "Иногда друзья, которые меняют нашу жизнь, появляются тогда, когда мы меньше всего их ждём."],
+    ],
+    dict: {
+      new: "новый",
+      girl: "девочка",
+      monday: "понедельник",
+      whose: "чей, которого",
+      name: "имя",
+      aiko: "Айко (японское имя)",
+      joined: ["join", "присоединяться", "прошедшее время (-ed)"],
+      our: "наш",
+      class: "класс",
+      came: ["come", "приходить, приезжать", "прошедшее время (неправильный глагол)"],
+      from: "из, от",
+      japan: "Япония",
+      which: "который",
+      country: "страна",
+      always: "всегда",
+      wanted: ["want", "хотеть", "3-я форма (-ed)"],
+      visit: "посещать, побывать",
+      first: "первый («at first» — сначала)",
+      shy: "застенчивый",
+      "didn't": ["did not", "не (отрицание в прошедшем)", "сокращение от did not"],
+      speak: "говорить",
+      anyone: "кто-нибудь, никто (в отрицании)",
+      noticed: ["notice", "замечать", "прошедшее время (-ed)"],
+      notebook: "блокнот, тетрадь",
+      drawing: ["draw", "рисовать", "форма -ing"],
+      full: "полный",
+      amazing: "удивительный",
+      dragons: ["dragon", "дракон", "множественное число"],
+      looked: ["look", "выглядеть, смотреть", "прошедшее время (-ed)"],
+      almost: "почти",
+      alive: "живой",
+      told: ["tell", "рассказывать", "прошедшее время (неправильный глагол)"],
+      about: "о, об",
+      club: "клуб, кружок",
+      where: "где",
+      students: ["student", "ученик, студент", "множественное число"],
+      create: "создавать",
+      comics: "комиксы",
+      together: "вместе",
+      now: "сейчас, теперь",
+      person: "человек",
+      who: "кто, который",
+      draws: ["draw", "рисовать", "форма для he / she / it"],
+      best: ["good", "хороший", "превосходная степень: лучший"],
+      pictures: ["picture", "картинка, рисунок", "множественное число"],
+      sometimes: "иногда",
+      change: "менять",
+      lives: ["life", "жизнь", "множественное число (life → lives)"],
+      arrive: "прибывать, появляться",
+      least: "меньше всего",
+      expect: "ожидать",
+    },
+    exercises: [
+      ["Aiko is the girl ___ draws dragons.", ["who", "which", "where"], 0],
+      ["This is the club ___ we create comics.", ["who", "where", "whose"], 1],
+      ["A girl ___ name was Aiko joined us.", ["who", "whose", "which"], 1],
+      ["The notebook ___ she has is full of dragons.", ["who", "where", "which"], 2],
+    ],
+  },
+  {
+    id: "science",
+    title: "The Science Fair",
+    ru: "Научная ярмарка",
+    level: "B1",
+    rule: {
+      title: "must, have to, should, don't have to",
+      html: `
+        <table>
+          <tr><td><b>must</b></td><td>должен (строгое правило, так считает говорящий)</td><td>You must finish by Friday.</td></tr>
+          <tr><td><b>have to</b></td><td>приходится, нужно (так сложились обстоятельства)</td><td>I have to take part.</td></tr>
+          <tr><td><b>should</b></td><td>следует, стоит (совет)</td><td>You should build a volcano.</td></tr>
+          <tr><td><b>don't have to</b></td><td>не обязательно</td><td>You don't have to buy anything.</td></tr>
+          <tr><td><b>mustn't</b></td><td>нельзя (запрет)</td><td>You mustn't give up.</td></tr>
+        </table>
+        <p>⚠️ <b>don't have to</b> и <b>mustn't</b> — совсем разные вещи: «не обязательно» и «нельзя»!</p>
+        <p>💡 <b>Правило чтения:</b> <b>c</b> перед <b>e, i, y</b> читается как [с]: <i>science, decided</i>, а в остальных случаях — как [к]: <i>crystal, check</i>.</p>`,
+    },
+    text: [
+      ["Every year our school has a science fair, and this year I have to take part.", "Каждый год в нашей школе проходит научная ярмарка, и в этом году мне нужно участвовать."],
+      ["Our teacher said we must finish our projects by Friday.", "Учительница сказала, что мы должны закончить проекты к пятнице."],
+      ["My friend Leo suggested, “You should build a volcano — they're easy!”", "Мой друг Лео предложил: «Тебе стоит сделать вулкан — это легко!»"],
+      ["But I wanted to do something original, so I decided to grow crystals.", "Но мне хотелось сделать что-то необычное, поэтому я решил вырастить кристаллы."],
+      ["You don't have to buy expensive equipment; salt, water and patience are enough.", "Не обязательно покупать дорогое оборудование: хватит соли, воды и терпения."],
+      ["Every evening I had to check the jar and write down the results.", "Каждый вечер мне нужно было проверять банку и записывать результаты."],
+      ["On the day of the fair, the judges said my crystals were the most beautiful they had seen.", "В день ярмарки судьи сказали, что мои кристаллы — самые красивые из всех, что они видели."],
+      ["I learned that you mustn't give up, even when progress is slow.", "Я понял, что нельзя сдаваться, даже когда дело идёт медленно."],
+    ],
+    dict: {
+      science: "наука",
+      fair: "ярмарка, выставка",
+      year: "год",
+      our: "наш",
+      school: "школа",
+      has: ["have", "иметь", "форма для he / she / it"],
+      take: "брать («take part» — участвовать)",
+      part: "часть («take part» — участвовать)",
+      teacher: "учитель",
+      said: ["say", "говорить, сказать", "прошедшее время (неправильный глагол)"],
+      must: "должен",
+      finish: "заканчивать",
+      projects: ["project", "проект", "множественное число"],
+      friday: "пятница",
+      leo: "Лео (имя)",
+      suggested: ["suggest", "предлагать", "прошедшее время (-ed)"],
+      should: "следует, стоит (совет)",
+      build: "строить",
+      volcano: "вулкан",
+      "they're": ["they are", "они есть", "сокращение от they are"],
+      easy: "лёгкий",
+      wanted: ["want", "хотеть", "прошедшее время (-ed)"],
+      do: "делать",
+      something: "что-то, что-нибудь",
+      original: "оригинальный, необычный",
+      decided: ["decide", "решать", "прошедшее время (-ed)"],
+      grow: "выращивать, расти",
+      crystals: ["crystal", "кристалл", "множественное число"],
+      expensive: "дорогой",
+      equipment: "оборудование",
+      salt: "соль",
+      water: "вода",
+      patience: "терпение",
+      enough: "достаточно",
+      had: ["have", "иметь", "прошедшее время («had to» — пришлось)"],
+      check: "проверять",
+      jar: "банка",
+      write: "писать («write down» — записывать)",
+      down: "вниз («write down» — записать)",
+      results: ["result", "результат", "множественное число"],
+      judges: ["judge", "судья", "множественное число"],
+      most: "самый, наиболее",
+      beautiful: "красивый",
+      seen: ["see", "видеть", "3-я форма (see — saw — seen)"],
+      learned: ["learn", "узнавать, учиться", "прошедшее время (-ed)"],
+      "mustn't": ["must not", "нельзя (запрет)", "сокращение от must not"],
+      give: "давать («give up» — сдаваться)",
+      up: "вверх («give up» — сдаваться)",
+      even: "даже",
+      progress: "прогресс, продвижение",
+      slow: "медленный",
+    },
+    exercises: [
+      ["You ___ build a volcano. (совет)", ["should", "must", "have"], 0],
+      ["You ___ buy equipment. (не обязательно)", ["mustn't", "don't have to", "shouldn't"], 1],
+      ["You ___ give up! (нельзя)", ["mustn't", "don't have to", "should"], 0],
+      ["Every evening I had ___ check the jar.", ["to", "must", "should"], 0],
+    ],
+  },
+  {
+    id: "robot",
+    title: "The Robot Who Wanted to Dream",
+    ru: "Робот, который хотел видеть сны",
+    level: "B2",
+    rule: {
+      title: "Косвенная речь (Reported Speech)",
+      html: `
+        <p>Когда пересказываем чужие слова после <b>said / asked / told</b> в прошедшем, время «сдвигается назад»:</p>
+        <table>
+          <tr><td>“Dreams <b>are</b> memories.”</td><td>→ She said that dreams <b>were</b> memories.</td></tr>
+          <tr><td>“I <b>don't know</b>.”</td><td>→ He replied that he <b>didn't know</b>.</td></tr>
+          <tr><td>“I <b>dreamed</b>.”</td><td>→ It said that he <b>had dreamed</b>.</td></tr>
+          <tr><td>“We <b>will</b> go.”</td><td>→ She promised that they <b>would</b> go.</td></tr>
+          <tr><td>“<b>Can</b> robots dream?”</td><td>→ He asked <b>whether</b> robots <b>could</b> dream.</td></tr>
+        </table>
+        <p>В пересказанном вопросе обычный порядок слов и связка <b>whether / if</b> — «ли».</p>
+        <p>💡 <b>Правило чтения:</b> в слове <b>scientist</b> sc читается как [с]: [сайэнтист]. Сочетание <b>-ory</b> в конце: <i>laboratory</i> [лэборэтри].</p>`,
+    },
+    text: [
+      ["In a quiet laboratory lived a robot called Pixel, who had been built to sort letters.", "В тихой лаборатории жил робот по имени Пиксель, которого создали, чтобы сортировать письма."],
+      ["One night Pixel asked the scientist whether robots could dream.", "Однажды ночью Пиксель спросил учёную, могут ли роботы видеть сны."],
+      ["She smiled and said that dreams were made of memories and wishes.", "Она улыбнулась и сказала, что сны состоят из воспоминаний и желаний."],
+      ["Pixel replied that he had plenty of memories but didn't know what a wish was.", "Пиксель ответил, что воспоминаний у него полно, но он не знает, что такое желание."],
+      ["The scientist explained that a wish was something you wanted but didn't have yet.", "Учёная объяснила, что желание — это то, чего хочется, но чего у тебя пока нет."],
+      ["The next morning she found a note on her desk.", "На следующее утро она нашла на своём столе записку."],
+      ["It said that Pixel had dreamed about the sea, although he had never seen it.", "В ней говорилось, что Пикселю приснилось море, хотя он никогда его не видел."],
+      ["She promised him that one day they would go there together.", "Она пообещала ему, что однажды они поедут туда вместе."],
+    ],
+    dict: {
+      robot: "робот",
+      robots: ["robot", "робот", "множественное число"],
+      who: "который, кто",
+      wanted: ["want", "хотеть", "прошедшее время (-ed)"],
+      dream: "мечтать, видеть сон",
+      quiet: "тихий",
+      laboratory: "лаборатория",
+      lived: ["live", "жить", "прошедшее время (-ed)"],
+      called: ["call", "называть, звать", "3-я форма (-ed): «по имени»"],
+      pixel: "Пиксель (имя робота)",
+      had: ["have", "иметь; вспомогательный глагол", "прошедшее время (had + V3 — Past Perfect)"],
+      been: ["be", "быть", "3-я форма (be — was/were — been)"],
+      built: ["build", "строить, создавать", "3-я форма (неправильный глагол)"],
+      sort: "сортировать",
+      letters: ["letter", "письмо", "множественное число"],
+      night: "ночь",
+      asked: ["ask", "спрашивать", "прошедшее время (-ed)"],
+      scientist: "учёный",
+      whether: "ли (в косвенном вопросе)",
+      could: ["can", "мочь", "прошедшее время / форма косвенной речи"],
+      smiled: ["smile", "улыбаться", "прошедшее время (-ed)"],
+      said: ["say", "говорить, сказать", "прошедшее время (неправильный глагол)"],
+      dreams: ["dream", "сон, мечта", "множественное число"],
+      made: ["make", "делать", "3-я форма («made of» — сделан из)"],
+      memories: ["memory", "воспоминание, память", "множественное число"],
+      wishes: ["wish", "желание", "множественное число"],
+      wish: "желание",
+      replied: ["reply", "отвечать", "прошедшее время (-ed)"],
+      plenty: "множество («plenty of» — полно, много)",
+      "didn't": ["did not", "не (отрицание в прошедшем)", "сокращение от did not"],
+      know: "знать",
+      explained: ["explain", "объяснять", "прошедшее время (-ed)"],
+      something: "что-то",
+      yet: "ещё (в отрицании)",
+      next: "следующий",
+      morning: "утро",
+      found: ["find", "находить", "прошедшее время (неправильный глагол)"],
+      note: "записка",
+      desk: "письменный стол",
+      dreamed: ["dream", "видеть сон, мечтать", "3-я форма (-ed)"],
+      about: "о, об",
+      sea: "море",
+      although: "хотя",
+      seen: ["see", "видеть", "3-я форма (see — saw — seen)"],
+      promised: ["promise", "обещать", "прошедшее время (-ed)"],
+      there: "туда, там",
+      together: "вместе",
+    },
+    exercises: [
+      ["“Dreams are memories.” → She said that dreams ___ memories.", ["are", "were", "will be"], 1],
+      ["“Can robots dream?” → He asked whether robots ___ dream.", ["can", "could", "will"], 1],
+      ["“We will go.” → She promised that they ___ go.", ["will", "would", "are"], 1],
+      ["“I dreamed.” → It said that he ___ dreamed.", ["has", "had", "was"], 1],
+    ],
+  },
+  {
+    id: "tree",
+    title: "The Last Tree",
+    ru: "Последнее дерево",
+    level: "C1",
+    rule: {
+      title: "wish / if only и смешанные условные предложения",
+      html: `
+        <p><b>wish / if only</b> выражают сожаление:</p>
+        <table>
+          <tr><td>о настоящем</td><td>wish + Past</td><td>They wished they <b>could</b> climb it. — Хотели бы они уметь…</td></tr>
+          <tr><td>о прошлом</td><td>if only + Past Perfect</td><td>If only we <b>had protected</b> the forests! — Если бы только мы защитили…</td></tr>
+        </table>
+        <p><b>Смешанные условные</b> соединяют разные времена:</p>
+        <p>прошлое → настоящее: <i>If our grandparents <b>had acted</b> sooner, we <b>would be living</b> among trees <b>now</b>.</i></p>
+        <p>То же через инверсию: <i><b>Had</b> our grandparents acted sooner, we would be living…</i></p>
+        <p>💡 <b>Правило чтения:</b> <b>-ed</b> после t/d — отдельный слог [ид]: <i>guarded, protected</i>. В <b>-ous</b> ударения нет: [эс].</p>`,
+    },
+    text: [
+      ["By the year 2150, the city had swallowed every forest for hundreds of miles.", "К 2150 году город поглотил все леса на сотни миль вокруг."],
+      ["Only one oak remained, guarded behind glass in the central square like a priceless relic.", "Остался лишь один дуб, охраняемый за стеклом на центральной площади, словно бесценная реликвия."],
+      ["Elderly citizens would stand before it, murmuring, “If only we had protected the forests while we still could.”", "Пожилые горожане стояли перед ним и бормотали: «Если бы только мы защитили леса, пока ещё могли»."],
+      ["Children, by contrast, wished they could climb its branches instead of merely gazing at them.", "Дети же, напротив, мечтали залезть на его ветви, а не просто смотреть на них."],
+      ["“Had our grandparents acted sooner, we would be living among trees now,” one boy remarked bitterly.", "«Если бы наши бабушки и дедушки действовали раньше, мы бы сейчас жили среди деревьев», — с горечью заметил один мальчик."],
+      ["Yet a quiet botanist named Iris refused to dwell on regret.", "Но тихая женщина-ботаник по имени Айрис не желала погружаться в сожаления."],
+      ["Night after night, she collected acorns from the old tree and nurtured them in secret.", "Ночь за ночью она собирала жёлуди старого дерева и тайно их выращивала."],
+      ["If she hadn't been so stubborn, the city wouldn't be turning green again today.", "Не будь она такой упрямой, город сегодня не зеленел бы снова."],
+    ],
+    dict: {
+      last: "последний",
+      tree: "дерево",
+      trees: ["tree", "дерево", "множественное число"],
+      year: "год",
+      city: "город",
+      had: ["have", "иметь; вспомогательный глагол", "прошедшее время (had + V3 — Past Perfect)"],
+      swallowed: ["swallow", "глотать, поглощать", "3-я форма (-ed)"],
+      forest: "лес",
+      forests: ["forest", "лес", "множественное число"],
+      hundreds: ["hundred", "сто, сотня", "«hundreds of» — сотни"],
+      miles: ["mile", "миля (≈1,6 км)", "множественное число"],
+      only: "только, единственный",
+      oak: "дуб",
+      remained: ["remain", "оставаться", "прошедшее время (-ed)"],
+      guarded: ["guard", "охранять", "3-я форма (-ed): охраняемый"],
+      behind: "за, позади",
+      glass: "стекло",
+      central: "центральный",
+      square: "площадь; квадрат",
+      like: "как, словно",
+      priceless: "бесценный",
+      relic: "реликвия",
+      elderly: "пожилой",
+      citizens: ["citizen", "житель, гражданин", "множественное число"],
+      stand: "стоять",
+      before: "перед",
+      murmuring: ["murmur", "бормотать", "форма -ing"],
+      protected: ["protect", "защищать", "3-я форма (-ed)"],
+      while: "пока",
+      still: "ещё, всё ещё",
+      could: ["can", "мочь", "прошедшее время / «бы мочь»"],
+      children: ["child", "ребёнок", "множественное число"],
+      contrast: "контраст («by contrast» — напротив)",
+      wished: ["wish", "желать, хотеть бы", "прошедшее время (-ed)"],
+      climb: "залезать, карабкаться",
+      its: "его, её (о предмете)",
+      branches: ["branch", "ветка", "множественное число"],
+      instead: "вместо («instead of» — вместо того чтобы)",
+      merely: "лишь, просто",
+      gazing: ["gaze", "пристально смотреть", "форма -ing"],
+      grandparents: "бабушки и дедушки",
+      acted: ["act", "действовать", "3-я форма (-ed)"],
+      sooner: ["soon", "скоро", "сравнительная степень: раньше"],
+      living: ["live", "жить", "форма -ing"],
+      among: "среди",
+      now: "сейчас",
+      boy: "мальчик",
+      remarked: ["remark", "заметить, сказать", "прошедшее время (-ed)"],
+      bitterly: "горько, с горечью",
+      yet: "однако, но",
+      quiet: "тихий",
+      botanist: "ботаник (учёный)",
+      named: ["name", "называть", "3-я форма: «по имени»"],
+      iris: "Айрис (имя)",
+      refused: ["refuse", "отказываться", "прошедшее время (-ed)"],
+      dwell: "задерживаться мыслями («dwell on» — зацикливаться на)",
+      regret: "сожаление",
+      night: "ночь",
+      after: "после, за («night after night» — ночь за ночью)",
+      collected: ["collect", "собирать", "прошедшее время (-ed)"],
+      acorns: ["acorn", "жёлудь", "множественное число"],
+      from: "из, с, от",
+      old: "старый",
+      nurtured: ["nurture", "выращивать, заботливо растить", "прошедшее время (-ed)"],
+      secret: "секрет, тайна («in secret» — тайно)",
+      "hadn't": ["had not", "не (Past Perfect)", "сокращение от had not"],
+      been: ["be", "быть", "3-я форма"],
+      stubborn: "упрямый",
+      "wouldn't": ["would not", "не … бы", "сокращение от would not"],
+      turning: ["turn", "становиться; поворачивать", "форма -ing («turn green» — зеленеть)"],
+      green: "зелёный",
+      today: "сегодня",
+    },
+    exercises: [
+      ["If only we ___ the forests!", ["protected", "had protected", "would protect"], 1],
+      ["Children wished they ___ climb the tree.", ["can", "could", "will"], 1],
+      ["Had they acted sooner, we ___ living among trees now.", ["will be", "would be", "were"], 1],
+      ["If she ___ so stubborn, the city wouldn't be green.", ["wasn't", "hadn't been", "isn't"], 1],
+    ],
+  },
+  {
+    id: "bees",
+    title: "The Language of Bees",
+    ru: "Язык пчёл",
+    level: "C2",
+    rule: {
+      title: "Выделительные конструкции, номинализация, инверсия",
+      html: `
+        <p>На уровне C2 важно уметь <b>расставлять акценты</b> и писать «научным» стилем.</p>
+        <p><b>Выделительные (cleft) предложения</b> — подчёркивают главное:</p>
+        <table>
+          <tr><td><b>What</b> astonished them <b>was</b>…</td><td>Что их поразило, так это…</td></tr>
+          <tr><td><b>It was</b> Karl von Frisch <b>who</b>…</td><td>Именно Карл фон Фриш…</td></tr>
+        </table>
+        <p><b>Номинализация</b> — вместо глагола существительное: <i>bees communicate in sophisticated ways → <b>the sophistication of their communication</b></i>.</p>
+        <p><b>Инверсия после Not only</b>: <i><b>Not only does</b> this challenge…, <b>but</b> it <b>also</b> raises…</i></p>
+        <p><b>Уступка</b>: <i><b>Whichever</b> interpretation one favours…</i> — Какую бы трактовку ни выбрать…</p>
+        <p>💡 <b>Правило чтения:</b> немые буквы в «умных» словах: <b>sc</b> в <i>sceptic</i> — [ск], <b>ph</b> — [ф]: <i>deciphered</i>, а в <i>indisputable</i> ударение на <b>-pu-</b>.</p>`,
+    },
+    text: [
+      ["What astonished early naturalists was not the industriousness of bees but the sophistication of their communication.", "Ранних натуралистов поразило не трудолюбие пчёл, а сложность их общения."],
+      ["It was Karl von Frisch who, in the mid-twentieth century, deciphered the so-called waggle dance.", "Именно Карл фон Фриш в середине двадцатого века расшифровал так называемый виляющий танец."],
+      ["By performing a figure-of-eight pattern, a returning forager conveys both the direction and the distance of a food source.", "Выполняя фигуру в форме восьмёрки, вернувшаяся пчела-сборщица сообщает и направление, и расстояние до источника пищи."],
+      ["The angle of the dance relative to the vertical corresponds to the position of the sun, an astonishingly abstract form of symbolic representation.", "Угол танца относительно вертикали соответствует положению солнца — поразительно абстрактная форма символического представления."],
+      ["Not only does this challenge the assumption that language is uniquely human, but it also raises profound questions about animal cognition.", "Это не только ставит под сомнение представление о том, что язык есть только у человека, но и поднимает глубокие вопросы о мышлении животных."],
+      ["Admittedly, sceptics contend that labelling such behaviour as language stretches the term beyond recognition.", "Правда, скептики утверждают, что называть такое поведение языком — значит растягивать термин до неузнаваемости."],
+      ["Whichever interpretation one favours, the discovery has irrevocably transformed our understanding of insect intelligence.", "Какой бы трактовки ни придерживаться, это открытие бесповоротно изменило наше понимание разума насекомых."],
+      ["What remains indisputable is that a creature with a brain smaller than a grain of rice can navigate, calculate and inform.", "Бесспорно одно: существо с мозгом меньше рисового зёрнышка умеет ориентироваться, вычислять и сообщать."],
+    ],
+    dict: {
+      language: "язык (речь)",
+      bees: ["bee", "пчела", "множественное число"],
+      what: "что; то, что",
+      astonished: ["astonish", "поражать, изумлять", "прошедшее время (-ed)"],
+      early: "ранний",
+      naturalists: ["naturalist", "натуралист, естествоиспытатель", "множественное число"],
+      industriousness: "трудолюбие",
+      sophistication: "сложность, утончённость",
+      their: "их",
+      communication: "общение, коммуникация",
+      karl: "Карл (имя)",
+      von: "фон (часть немецкой фамилии)",
+      frisch: "Фриш (фамилия)",
+      who: "который, кто",
+      mid: "середина («mid-twentieth» — середина двадцатого)",
+      twentieth: "двадцатый",
+      century: "век, столетие",
+      deciphered: ["decipher", "расшифровывать", "прошедшее время (-ed)"],
+      called: ["call", "называть", "3-я форма («so-called» — так называемый)"],
+      waggle: "виляние, покачивание",
+      dance: "танец",
+      performing: ["perform", "выполнять, исполнять", "форма -ing (выполняя)"],
+      figure: "фигура; цифра",
+      eight: "восемь",
+      pattern: "узор, схема",
+      returning: ["return", "возвращаться", "форма -ing (возвращающийся)"],
+      forager: "сборщица корма, фуражир",
+      conveys: ["convey", "передавать, сообщать", "форма для he / she / it"],
+      both: "оба («both … and» — и …, и …)",
+      direction: "направление",
+      distance: "расстояние",
+      food: "еда, пища",
+      source: "источник",
+      angle: "угол",
+      relative: "относительный («relative to» — относительно)",
+      vertical: "вертикаль",
+      corresponds: ["correspond", "соответствовать", "форма для he / she / it"],
+      position: "положение, позиция",
+      sun: "солнце",
+      astonishingly: "поразительно",
+      abstract: "абстрактный",
+      form: "форма",
+      symbolic: "символический",
+      representation: "представление, изображение",
+      does: ["do", "делать; вспомогательный глагол", "форма для he / she / it (здесь — для инверсии)"],
+      challenge: "бросать вызов, ставить под сомнение",
+      assumption: "предположение, допущение",
+      uniquely: "исключительно, уникально",
+      human: "человеческий; человек",
+      raises: ["raise", "поднимать", "форма для he / she / it"],
+      profound: "глубокий",
+      questions: ["question", "вопрос", "множественное число"],
+      about: "о, об",
+      animal: "животное",
+      cognition: "познание, мышление",
+      admittedly: "надо признать, правда",
+      sceptics: ["sceptic", "скептик", "множественное число"],
+      contend: "утверждать",
+      labelling: ["label", "называть, навешивать ярлык", "форма -ing"],
+      such: "такой",
+      behaviour: "поведение",
+      as: "как, в качестве",
+      stretches: ["stretch", "растягивать", "форма для he / she / it"],
+      term: "термин",
+      beyond: "за пределами («beyond recognition» — до неузнаваемости)",
+      recognition: "узнавание, признание",
+      whichever: "какой бы ни",
+      interpretation: "толкование, интерпретация",
+      one: "один; (безличное) человек, кто-либо",
+      favours: ["favour", "отдавать предпочтение", "форма для he / she / it"],
+      discovery: "открытие",
+      has: ["have", "иметь; вспомогательный глагол", "форма для he / she / it (Present Perfect)"],
+      irrevocably: "бесповоротно, безвозвратно",
+      transformed: ["transform", "преобразовывать", "3-я форма (-ed)"],
+      our: "наш",
+      understanding: "понимание",
+      insect: "насекомое",
+      intelligence: "интеллект, разум",
+      remains: ["remain", "оставаться", "форма для he / she / it"],
+      indisputable: "бесспорный",
+      creature: "существо",
+      brain: "мозг",
+      smaller: ["small", "маленький", "сравнительная степень: меньше"],
+      than: "чем",
+      grain: "зерно, зёрнышко",
+      rice: "рис",
+      can: "мочь, уметь",
+      navigate: "ориентироваться, прокладывать путь",
+      calculate: "вычислять",
+      inform: "сообщать, информировать",
+    },
+    exercises: [
+      ["___ astonished them was the sophistication of bees.", ["That", "What", "It"], 1],
+      ["It was von Frisch ___ deciphered the dance.", ["which", "who", "what"], 1],
+      ["Not only ___ this challenge the assumption…", ["is", "does", "it"], 1],
+      ["___ interpretation one favours, the discovery is important.", ["Whatever", "Whichever", "However"], 1],
+    ],
+  },
 ];
+
+// Порядок прохождения: от самого лёгкого к самому сложному — маленькими шагами
+const STORY_ORDER = [
+  "hello", "cat", "family", "anna", "shop", "frog", "rainy",       // A1
+  "pet", "trip", "zoo", "key",                                     // A2
+  "newgirl", "job", "neighbour", "science",                        // B1
+  "rich", "painting", "robot",                                     // B2
+  "lighthouse", "tree",                                            // C1
+  "paradox", "bees",                                               // C2
+];
+STORIES.sort((a, b) => STORY_ORDER.indexOf(a.id) - STORY_ORDER.indexOf(b.id));
