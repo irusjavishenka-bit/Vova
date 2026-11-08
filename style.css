@@ -215,3 +215,18 @@ h1 .w { padding: 0; }
 /* Игра «На скорость» */
 .blitz-bar { display: flex; justify-content: space-between; font-size: 1.1rem; margin-bottom: 8px; }
 .combo { min-height: 24px; text-align: center; color: #e8590c; font-weight: 700; margin-top: 10px; }
+
+/* Озвучка */
+.play-btn {
+  background: var(--primary); color: #fff; border: 0; border-radius: 50%;
+  width: 26px; height: 26px; font-size: .7rem; vertical-align: middle; margin-right: 4px;
+}
+.sentence { border-radius: 8px; transition: background .2s; }
+.sentence.playing { background: color-mix(in srgb, var(--primary) 14%, transparent); }
+.voice-warn {
+  max-width: 728px; width: calc(100% - 32px); margin: 12px auto 0; padding: 12px 16px; font-size: .9rem;
+  background: color-mix(in srgb, #f5b400 22%, var(--card)); border: 1px solid #f5b400; border-radius: var(--radius);
+}
+.voice-warn[hidden] { display: none; }
+.level-head { display: flex; align-items: center; gap: 8px; margin: 18px 0 10px; font-size: 1.05rem; }
+.level-code { background: var(--primary); color: #fff; border-radius: 8px; padding: 2px 8px; font-size: .85rem; }

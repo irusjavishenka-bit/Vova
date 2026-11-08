@@ -7,7 +7,7 @@ const LEARNED_AT = 3; // сколько правильных ответов ну
 function emptyProgress() {
   // saved: слова, которые пользователь переводил при чтении { en: {en, ru, ex, story} }
   // stories: прочитанные рассказы { index: true }; best: рекорды игры «На скорость»
-  return { words: {}, xp: 0, streak: 0, lastDay: null, grammar: {}, saved: {}, stories: {}, best: {} };
+  return { words: {}, xp: 0, streak: 0, lastDay: null, grammar: {}, saved: {}, stories: {}, best: {}, settings: { slow: false } };
 }
 
 function loadProgress() {
@@ -69,13 +69,60 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-function speak(text, rate = 0.9) {
-  if (!("speechSynthesis" in window)) return;
-  speechSynthesis.cancel();
+// ---------- Озвучка ----------
+const HAS_TTS = "speechSynthesis" in window;
+let enVoice = null;
+
+// Выбираем самый качественный английский голос из доступных на устройстве
+function pickVoice() {
+  if (!HAS_TTS) return showVoiceWarning(true);
+  const voices = speechSynthesis.getVoices();
+  const en = voices.filter(v => /^en([-_]|$)/i.test(v.lang));
+  enVoice =
+    en.find(v => /en[-_]US/i.test(v.lang) && /google|samantha|natural|aria|jenny|neural/i.test(v.name)) ||
+    en.find(v => /en[-_](US|GB)/i.test(v.lang) && v.localService) ||
+    en.find(v => /en[-_](US|GB)/i.test(v.lang)) ||
+    en[0] || null;
+  // Голоса подгружаются не сразу: предупреждаем, только если список уже есть, а английского нет
+  showVoiceWarning(voices.length > 0 && !enVoice);
+}
+
+function showVoiceWarning(show) {
+  const el = document.getElementById("voice-warn");
+  if (el) el.hidden = !show;
+}
+
+function utter(text, slow = false) {
   const u = new SpeechSynthesisUtterance(text.replace(/^to /, ""));
-  u.lang = "en-US";
-  u.rate = rate;
-  speechSynthesis.speak(u);
+  u.lang = enVoice ? enVoice.lang : "en-US";
+  if (enVoice) u.voice = enVoice;
+  u.rate = slow ? 0.55 : progress.settings.slow ? 0.7 : 0.95;
+  return u;
+}
+
+function speak(text, slow = false) {
+  if (!HAS_TTS) return;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(utter(text, slow));
+}
+
+// Читает предложения по очереди и сообщает, какое звучит сейчас
+function speakSentences(list, onSentence, onEnd) {
+  if (!HAS_TTS) return;
+  speechSynthesis.cancel();
+  list.forEach((text, k) => {
+    const u = utter(text);
+    u.onstart = () => onSentence(k);
+    if (k === list.length - 1) { u.onend = onEnd; u.onerror = onEnd; }
+    speechSynthesis.speak(u);
+  });
+}
+
+if (HAS_TTS) {
+  speechSynthesis.addEventListener("voiceschanged", pickVoice);
+  pickVoice();
+} else {
+  showVoiceWarning(true);
 }
 
 function normalize(s) {
@@ -163,6 +210,28 @@ function resultScreen(correct, total, again, backTo, extra = "") {
 // ---------- Главная ----------
 function storyUnlocked(i) { return i === 0 || !!progress.stories[i - 1]; }
 
+const LEVEL_NAMES = {
+  "A1": "Начальный — самые лёгкие",
+  "A1+": "Начальный+",
+  "A2": "Элементарный",
+  "B1": "Средний",
+  "B2": "Выше среднего",
+  "C1": "Продвинутый",
+  "C1–C2": "Самый сложный",
+};
+
+// Группируем рассказы по уровню (A1, A2, B1...) в порядке сложности
+function storyLevels() {
+  const groups = [];
+  STORIES.forEach((s, i) => {
+    const code = s.level.split("·")[0].trim();
+    const last = groups[groups.length - 1];
+    if (last && last[0] === code) last[1].push(i);
+    else groups.push([code, [i]]);
+  });
+  return groups;
+}
+
 function renderHome() {
   const review = getSet("review").words;
   const myCount = Object.keys(progress.saved).length;
@@ -184,16 +253,21 @@ function renderHome() {
         <div class="name">Мои слова</div>
         <div class="sub">${myCount} слов из рассказов</div>
       </button>
-      ${STORIES.map((s, i) => {
-        const open = storyUnlocked(i);
-        return `
-          <button class="tile ${open ? "" : "locked"}" data-go="${open ? "story:" + i : ""}" ${open ? "" : "disabled"}>
-            <div class="sub">${open ? (progress.stories[i] ? "✅ Прочитано" : "📖 Рассказ " + (i + 1)) : "🔒 Сначала прочитай предыдущий"}</div>
-            <div class="name">${esc(s.title)}</div>
-            <div class="sub">${esc(s.ru)} · ${esc(s.level)}</div>
-          </button>`;
-      }).join("")}
     </div>
+    ${storyLevels().map(([code, items]) => `
+      <h3 class="level-head"><span class="level-code">${esc(code)}</span> ${esc(LEVEL_NAMES[code] || "")}</h3>
+      <div class="grid">
+        ${items.map(i => {
+          const s = STORIES[i];
+          const open = storyUnlocked(i);
+          return `
+            <button class="tile ${open ? "" : "locked"}" data-go="${open ? "story:" + i : ""}" ${open ? "" : "disabled"}>
+              <div class="sub">${open ? (progress.stories[i] ? "✅ Прочитано" : "📖 Рассказ " + (i + 1)) : "🔒 Сначала прочитай предыдущий"}</div>
+              <div class="name">${esc(s.title)}</div>
+              <div class="sub">${esc(s.ru)}</div>
+            </button>`;
+        }).join("")}
+      </div>`).join("")}
 
     <h2>📖 Словарь по темам</h2>
     <div class="grid">
@@ -218,9 +292,18 @@ function renderHome() {
         </button>`).join("")}
     </div>
 
-    <h2>⚙️</h2>
-    <button class="btn" id="reset">Сбросить прогресс</button>
+    <h2>⚙️ Настройки</h2>
+    <div class="row">
+      <button class="btn" id="slow-toggle">${progress.settings.slow ? "🐢 Медленная озвучка: включена" : "🔊 Обычная скорость озвучки"}</button>
+      <button class="btn" data-say="Hello! Let's learn English together.">▶ Проверить голос</button>
+      <button class="btn" id="reset">Сбросить прогресс</button>
+    </div>
   `;
+  document.getElementById("slow-toggle").onclick = () => {
+    progress.settings.slow = !progress.settings.slow;
+    save();
+    renderHome();
+  };
   document.getElementById("reset").onclick = () => {
     if (confirm("Точно сбросить весь прогресс?")) {
       progress = emptyProgress();
@@ -293,14 +376,17 @@ function renderStory(i) {
 
     <p class="hint" style="text-align:left">👆 Нажми на любое слово, чтобы увидеть перевод. Слово сохранится в «Мои слова» для тренировки.</p>
     <div class="row">
-      <button class="btn" id="read-all">🔊 Прочитать вслух</button>
-      <button class="btn" id="toggle-tr">🇷🇺 Показать весь перевод</button>
+      <button class="btn primary" id="read-all">▶ Слушать весь текст</button>
+      <button class="btn" id="slow">${progress.settings.slow ? "🐢 Медленно" : "🔊 Обычная скорость"}</button>
+      <button class="btn" id="toggle-tr">🇷🇺 Показать перевод</button>
     </div>
 
     <div class="card book" id="book">
       ${s.text.map(([en, ru], k) => `
         <div class="sentence">
-          <div class="en-line">${wrapWords(en)}
+          <div class="en-line">
+            <button class="play-btn" data-k="${k}" title="Прослушать предложение">▶</button>
+            ${wrapWords(en)}
             <button class="tr-btn" data-k="${k}" title="Перевод предложения">↔</button>
           </div>
           <div class="ru-line" id="tr-${k}" hidden>${esc(ru)}</div>
@@ -316,19 +402,48 @@ function renderStory(i) {
 
   refreshStoryWords();
 
-  document.getElementById("read-all").onclick = () => speak(s.text.map(t => t[0]).join(" "), 0.85);
+  const sentences = app.querySelectorAll(".sentence");
+  const highlight = k => sentences.forEach((el, j) => el.classList.toggle("playing", j === k));
+  const readBtn = document.getElementById("read-all");
+  let reading = false;
+  const stopReading = () => {
+    reading = false;
+    highlight(-1);
+    if (readBtn.isConnected) readBtn.textContent = "▶ Слушать весь текст";
+  };
+  readBtn.onclick = () => {
+    if (reading) { speechSynthesis.cancel(); return stopReading(); }
+    reading = true;
+    readBtn.textContent = "⏹ Остановить";
+    speakSentences(s.text.map(t => t[0]), k => {
+      highlight(k);
+      sentences[k].scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }, stopReading);
+  };
+  app.querySelectorAll(".play-btn").forEach(b => {
+    b.onclick = e => {
+      e.stopPropagation();
+      reading = false;
+      readBtn.textContent = "▶ Слушать весь текст";
+      speakSentences([s.text[b.dataset.k][0]], () => highlight(Number(b.dataset.k)), () => highlight(-1));
+    };
+  });
+  document.getElementById("slow").onclick = e => {
+    progress.settings.slow = !progress.settings.slow;
+    save();
+    e.target.textContent = progress.settings.slow ? "🐢 Медленно" : "🔊 Обычная скорость";
+  };
   let shown = false;
   document.getElementById("toggle-tr").onclick = e => {
     shown = !shown;
     app.querySelectorAll(".ru-line").forEach(el => { el.hidden = !shown; });
-    e.target.textContent = shown ? "🇷🇺 Скрыть перевод" : "🇷🇺 Показать весь перевод";
+    e.target.textContent = shown ? "🇷🇺 Скрыть перевод" : "🇷🇺 Показать перевод";
   };
   app.querySelectorAll(".tr-btn").forEach(b => {
     b.onclick = e => {
       e.stopPropagation();
       const line = document.getElementById("tr-" + b.dataset.k);
       line.hidden = !line.hidden;
-      if (!line.hidden) speak(s.text[b.dataset.k][0]);
     };
   });
 }
@@ -370,9 +485,11 @@ function openSheet(word) {
   const draw = () => {
     sheet.innerHTML = `
       <button class="sheet-close" id="sheet-close" aria-label="Закрыть">✕</button>
-      <div class="row">
-        <div class="sheet-word">${esc(info.word)}</div>
-        <button class="speak" data-say="${esc(info.word)}">🔊</button>
+      <div class="sheet-word">${esc(info.word)}</div>
+      <div class="row" style="margin:6px 0">
+        <button class="btn" data-say="${esc(info.word)}">🔊 Послушать</button>
+        <button class="btn" data-say-slow="${esc(info.word)}">🐢 Медленно</button>
+        ${info.base !== info.word ? `<button class="btn" data-say="${esc(info.base)}">🔊 ${esc(info.base)}</button>` : ""}
       </div>
       ${info.base !== info.word ? `<div class="muted">Начальная форма: <b>${esc(info.base)}</b></div>` : ""}
       <div class="sheet-ru">${esc(info.ru)}</div>
@@ -395,7 +512,7 @@ function openSheet(word) {
   speak(info.word);
 }
 
-function closeSheet() { sheet.hidden = true; }
+function closeSheet() { if (sheet) sheet.hidden = true; }
 
 function renderStoryDone(i) {
   if (!storyUnlocked(i)) return renderHome();
@@ -463,7 +580,7 @@ function renderCards(arg) {
       <div class="flashcard" id="fc">
         <div class="flashcard-inner">
           <div class="face"><div class="word">${esc(en)}</div><div class="hint">Нажми, чтобы перевернуть</div></div>
-          <div class="face back-face"><div class="word">${esc(ru)}</div><div class="example">${esc(ex || "")}</div></div>
+          <div class="face back-face"><div class="word">${esc(ru)}</div><div class="example">${esc(ex || "")}</div>${ex ? `<button class="btn" data-say="${esc(ex)}" style="margin-top:10px">🔊 Пример</button>` : ""}</div>
         </div>
       </div>
       <div class="row" style="justify-content:space-between">
@@ -863,6 +980,8 @@ document.addEventListener("click", e => {
   if (go) { if (go.dataset.go) navigate(go.dataset.go); return; }
   const say = e.target.closest("[data-say]");
   if (say) { e.stopPropagation(); speak(say.dataset.say); return; }
+  const saySlow = e.target.closest("[data-say-slow]");
+  if (saySlow) { e.stopPropagation(); speak(saySlow.dataset.saySlow, true); return; }
   const unsave = e.target.closest("[data-unsave]");
   if (unsave) {
     delete progress.saved[unsave.dataset.unsave];
