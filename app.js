@@ -153,6 +153,9 @@ function backBtn(target, label = "← Назад") {
 function getSet(arg) {
   if (TOPICS[arg]) return { words: TOPICS[arg].words, title: TOPICS[arg].title, backTo: "topic:" + arg };
   if (arg === "my") return { words: savedList(), title: "Мои слова", backTo: "mywords" };
+  if (arg === "abc") {
+    return { words: ALPHABET.map(([L, , , word, , ru]) => [word, ru, `${L} — ${word}`]), title: "Азбука", backTo: "abc" };
+  }
   if (arg === "review") {
     return { words: allWords().filter(w => progress.words[w[0]] !== undefined && !isLearned(w[0])), title: "Повторение", backTo: "home" };
   }
@@ -273,6 +276,12 @@ function renderHome() {
         <div><b>Повторение</b><div class="muted">Слов на повторение: ${review.length}</div></div>
         <button class="btn primary" data-go="quiz:review">Повторить</button>
       </div>` : ""}
+
+    <h2>🔤 Азбука — начни здесь</h2>
+    <button class="card abc-banner" data-go="abc">
+      <span class="abc-letters">Aa Bb Cc</span>
+      <span><b>Буквы и звуки</b><br><span class="muted">26 букв, как они читаются, сочетания sh, ch, th… и игра «Первая буква»</span></span>
+    </button>
 
     <h2>📚 Чтение книги</h2>
     <p class="muted" style="margin-top:-6px">Потихоньку, шаг за шагом: от самых простых рассказов (A1) до самых сложных (C2). К каждому есть правило.</p>
@@ -583,6 +592,119 @@ function renderStoryDone(i) {
         : doneCount() === STORIES.length ? `<button class="btn primary" data-go="finish">🏁 К финишу!</button>` : ""}
       <button class="btn" data-go="home">На главную</button>
     </div>`;
+}
+
+// ---------- Азбука ----------
+function renderAbc() {
+  app.innerHTML = `
+    ${backBtn("home")}
+    <h1>🔤 Азбука</h1>
+    <p class="muted">Нажми на букву — услышишь, как она называется, и слово на эту букву.</p>
+    <div class="row">
+      <button class="btn primary" data-go="abcgame">🎯 Игра «Первая буква»</button>
+      <button class="btn" id="abc-song">▶ Весь алфавит</button>
+    </div>
+    <div class="abc-grid">
+      ${ALPHABET.map(([L, name, sound, word, emoji, ru]) => `
+        <button class="abc-card" data-letter="${L}">
+          <div class="abc-big">${L}${L.toLowerCase()}</div>
+          <div class="abc-emoji">${emoji}</div>
+          <div class="abc-word">${esc(word)}</div>
+          <div class="muted abc-ru">${esc(ru)}</div>
+          <div class="abc-name">[${esc(name)}]</div>
+        </button>`).join("")}
+    </div>
+    <div class="card" id="abc-info" hidden></div>
+
+    <h2>🧩 Фоника — как читаются сочетания букв</h2>
+    <p class="muted" style="margin-top:-6px">Некоторые буквы вместе читаются по-особому. Нажми и послушай.</p>
+    <div class="abc-grid">
+      ${PHONICS.map(([combo, sound, word, emoji, ru]) => `
+        <button class="abc-card" data-say="${esc(word)}">
+          <div class="abc-big" style="font-size:1.4rem">${esc(combo)}</div>
+          <div class="abc-emoji">${emoji}</div>
+          <div class="abc-word">${esc(word)}</div>
+          <div class="muted abc-ru">${esc(ru)}</div>
+          <div class="abc-name">${esc(sound)}</div>
+        </button>`).join("")}
+    </div>
+
+    <h2>🎮 Тренируй слова из азбуки</h2>
+    ${gameTiles("abc", ALPHABET.length)}`;
+
+  app.querySelectorAll("[data-letter]").forEach(btn => {
+    btn.onclick = () => {
+      const [L, name, sound, word, emoji, ru] = ALPHABET.find(a => a[0] === btn.dataset.letter);
+      const info = document.getElementById("abc-info");
+      info.hidden = false;
+      info.innerHTML = `
+        <div class="row" style="justify-content:space-between">
+          <div class="abc-big">${L}${L.toLowerCase()}</div>
+          <div class="abc-emoji">${emoji}</div>
+        </div>
+        <p><b>Называется:</b> [${esc(name)}]<br><b>Звук в словах:</b> ${esc(sound)}</p>
+        <p><b>${esc(word)}</b> — ${esc(ru)}</p>
+        <div class="row">
+          <button class="btn" data-say="${L}">🔊 Буква</button>
+          <button class="btn" data-say="${esc(word)}">🔊 Слово</button>
+          <button class="btn" data-say-slow="${esc(word)}">🐢 Медленно</button>
+        </div>`;
+      app.querySelectorAll(".abc-card.active").forEach(c => c.classList.remove("active"));
+      btn.classList.add("active");
+      speakSentences([L + ".", word], () => {}, () => {});
+      info.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    };
+  });
+  document.getElementById("abc-song").onclick = () => {
+    const cards = app.querySelectorAll("[data-letter]");
+    speakSentences(ALPHABET.map(a => a[0] + "."), k => {
+      cards.forEach((c, j) => c.classList.toggle("active", j === k));
+    }, () => cards.forEach(c => c.classList.remove("active")));
+  };
+}
+
+// Игра: услышь слово и выбери, с какой буквы оно начинается
+function renderAbcGame() {
+  const rounds = shuffle(ALPHABET).slice(0, 10);
+  let i = 0, correct = 0;
+  function draw() {
+    const [L, , , word, emoji, ru] = rounds[i];
+    const options = shuffle([L, ...shuffle(ALPHABET.filter(a => a[0] !== L)).slice(0, 3).map(a => a[0])]);
+    app.innerHTML = `
+      ${backBtn("abc")}
+      <div class="counter">Слово ${i + 1} из ${rounds.length} · Верно: ${correct}</div>
+      <div class="question"><div class="abc-emoji" style="font-size:4rem">${emoji}</div>
+        <button class="btn primary" id="play">🔊 Послушать слово</button></div>
+      <p class="muted" style="text-align:center">С какой буквы начинается слово?</p>
+      <div class="abc-options">${options.map(o => `<button class="option abc-option" data-val="${o}">${o}${o.toLowerCase()}</button>`).join("")}</div>
+      <div class="feedback" id="fb"></div>
+      <button class="btn primary" id="next" style="display:none">Дальше →</button>`;
+    document.getElementById("play").onclick = () => speak(word);
+    speak(word);
+    app.querySelectorAll(".abc-option").forEach(btn => {
+      btn.onclick = () => {
+        const ok = btn.dataset.val === L;
+        app.querySelectorAll(".abc-option").forEach(b => {
+          b.disabled = true;
+          if (b.dataset.val === L) b.classList.add("correct");
+        });
+        if (!ok) btn.classList.add("wrong");
+        if (ok) { correct++; progress.xp += 10; }
+        touchStreak(); save();
+        const fb = document.getElementById("fb");
+        fb.className = "feedback " + (ok ? "good" : "bad");
+        fb.textContent = `${ok ? "Правильно! 🎉" : "Не совсем."} ${word} — ${ru}, начинается с буквы ${L}`;
+        const next = document.getElementById("next");
+        next.style.display = "inline-block";
+        next.onclick = () => {
+          i++;
+          if (i < rounds.length) draw();
+          else resultScreen(correct, rounds.length, renderAbcGame, "abc");
+        };
+      };
+    });
+  }
+  draw();
 }
 
 function renderFinish() {
@@ -1021,6 +1143,8 @@ function render() {
     case "blitz": return renderBlitz(arg);
     case "mywords": return renderMyWords();
     case "finish": return renderFinish();
+    case "abc": return renderAbc();
+    case "abcgame": return renderAbcGame();
     case "story": return STORIES[n] ? renderStory(n) : renderHome();
     case "story-done": return STORIES[n] ? renderStoryDone(n) : renderHome();
     case "srule":

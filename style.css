@@ -255,3 +255,21 @@ h1 .w { padding: 0; }
   .topbar, .back, .no-print, .voice-warn { display: none !important; }
   body { background: #fff; }
 }
+
+/* Азбука */
+.abc-banner { display: flex; gap: 16px; align-items: center; width: 100%; text-align: left; color: var(--text); cursor: pointer; }
+.abc-banner:hover { border-color: var(--primary); }
+.abc-letters { font-size: 1.8rem; font-weight: 800; color: var(--primary); white-space: nowrap; }
+.abc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 10px; margin: 14px 0; }
+.abc-card {
+  background: var(--card); border: 2px solid var(--border); border-radius: var(--radius);
+  padding: 10px 6px; color: var(--text); text-align: center;
+}
+.abc-card:hover, .abc-card.active { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, var(--card)); }
+.abc-big { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+.abc-emoji { font-size: 1.8rem; }
+.abc-word { font-weight: 600; }
+.abc-ru { font-size: .8rem; }
+.abc-name { font-size: .8rem; color: var(--muted); }
+.abc-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.abc-option { text-align: center; font-size: 2rem; font-weight: 800; }
