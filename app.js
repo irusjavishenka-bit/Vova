@@ -343,12 +343,25 @@ function renderHome() {
     save();
     renderHome();
   };
-  document.getElementById("reset").onclick = () => {
-    if (confirm("Точно сбросить весь прогресс?")) {
-      progress = emptyProgress();
-      save();
-      renderHome();
+  // Сброс в два нажатия: первое спрашивает, второе подтверждает
+  const resetBtn = document.getElementById("reset");
+  let armed = false;
+  resetBtn.onclick = () => {
+    if (!armed) {
+      armed = true;
+      resetBtn.textContent = "Точно сбросить? Нажми ещё раз";
+      resetBtn.classList.add("danger");
+      setTimeout(() => {
+        if (!resetBtn.isConnected) return;
+        armed = false;
+        resetBtn.textContent = "Сбросить прогресс";
+        resetBtn.classList.remove("danger");
+      }, 4000);
+      return;
     }
+    progress = emptyProgress();
+    save();
+    renderHome();
   };
 }
 
@@ -725,8 +738,8 @@ function renderFinish() {
     <div class="row no-print" style="margin-top:16px">
       <input class="input" id="cert-name" placeholder="Впиши имя для сертификата" value="${esc(name)}" style="flex:1;min-width:200px">
       <button class="btn primary" id="cert-save">Сохранить имя</button>
-      <button class="btn" onclick="window.print()">🖨 Распечатать</button>
-    </div>`;
+    </div>
+    <p class="muted no-print">📸 Сделай снимок экрана, чтобы сохранить сертификат.</p>`;
   document.getElementById("cert-save").onclick = () => {
     progress.settings.name = document.getElementById("cert-name").value.trim();
     save();
