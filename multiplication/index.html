@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Таблица умножения</title>
+<style>
+:root{
+  --bg:#fff8ec; --card:#ffffff; --ink:#2b2340; --muted:#7a7290; --line:#eadfcb;
+  --accent:#ff7a3d; --accent2:#4c8dff; --ok:#2fb36d; --bad:#e5484d; --lock:#c9c1b3;
+  --learn:#4c8dff; --train:#ff7a3d; --review:#9b5de5; --mix:#2fb36d;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1b1726; --card:#262036; --ink:#f3eefc; --muted:#a79fbd; --line:#3a3150; --lock:#4a4260;
+  }
+}
+:root[data-theme="dark"]{ --bg:#1b1726; --card:#262036; --ink:#f3eefc; --muted:#a79fbd; --line:#3a3150; --lock:#4a4260; }
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS",system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+body{min-height:100vh;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.wrap{max-width:560px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+header h1{font-size:22px;margin:0}
+.pill{background:var(--card);border:2px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:700}
+.back{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:8px 12px;font-weight:700}
+.card{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:16px;margin-bottom:14px}
+.muted{color:var(--muted)}
+.big-btn{display:block;width:100%;padding:16px;border-radius:16px;background:var(--accent);color:#fff;font-size:20px;font-weight:800;box-shadow:0 4px 0 rgba(0,0,0,.18)}
+.big-btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.18)}
+.big-btn.blue{background:var(--accent2)}
+.big-btn.ghost{background:var(--card);color:var(--ink);border:2px solid var(--line);box-shadow:none;margin-top:10px}
+/* path */
+.stage-title{font-size:15px;font-weight:800;color:var(--muted);margin:18px 4px 8px;text-transform:uppercase;letter-spacing:.04em}
+.step{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px;margin-bottom:8px}
+.step .ico{width:46px;height:46px;flex:none;border-radius:14px;display:grid;place-items:center;font-size:24px;color:#fff}
+.step .txt{flex:1;min-width:0}
+.step .txt b{display:block;font-size:17px}
+.step .txt span{font-size:13px;color:var(--muted)}
+.step .st{font-size:18px;white-space:nowrap}
+.step.locked{opacity:.55;cursor:not-allowed}
+.step.locked .ico{background:var(--lock)!important}
+.step.current{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.t-learn{background:var(--learn)}.t-train{background:var(--train)}.t-review{background:var(--review)}.t-mix{background:var(--mix)}
+.progress{height:12px;background:var(--line);border-radius:99px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
+/* learn table */
+.rows{display:grid;gap:8px}
+.row{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:2px solid var(--line);border-radius:14px;padding:10px 14px;font-size:24px;font-weight:800}
+.row .ans{min-width:64px;text-align:center;border-radius:10px;padding:2px 8px;background:var(--accent2);color:#fff}
+.row .ans.hidden{background:var(--line);color:transparent}
+.dots{display:flex;flex-wrap:wrap;gap:3px;max-width:150px;justify-content:flex-end}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--accent)}
+.tip{background:color-mix(in srgb,var(--accent2) 14%,var(--card));border-radius:14px;padding:12px;margin:12px 0;font-size:16px;line-height:1.4}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.tabs button{padding:8px 14px;border-radius:12px;border:2px solid var(--line);background:var(--card);font-weight:800;font-size:17px}
+.tabs button.on{background:var(--review);border-color:var(--review);color:#fff}
+.toggle{display:flex;gap:8px;margin:10px 0}
+.toggle button{flex:1;padding:10px;border-radius:12px;border:2px solid var(--line);background:var(--card);font-weight:700}
+/* trainer */
+.q{font-size:52px;font-weight:900;text-align:center;margin:8px 0 4px;letter-spacing:.02em}
+.answer{font-size:44px;font-weight:900;text-align:center;min-height:64px;border-bottom:4px solid var(--line);margin:0 auto 10px;max-width:180px}
+.answer.ok{color:var(--ok);border-color:var(--ok)}
+.answer.bad{color:var(--bad);border-color:var(--bad)}
+.feedback{text-align:center;min-height:28px;font-size:18px;font-weight:700;margin-bottom:8px}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pad button{padding:16px 0;font-size:28px;font-weight:800;border-radius:14px;background:var(--card);border:2px solid var(--line);box-shadow:0 3px 0 var(--line)}
+.pad button:active{transform:translateY(2px);box-shadow:none}
+.pad .go{background:var(--ok);border-color:var(--ok);color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.2)}
+.pad .del{color:var(--bad)}
+.hud{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;font-weight:700}
+.hud .progress{flex:1}
+.result{text-align:center}
+.result .stars{font-size:54px;margin:6px 0}
+.result h2{margin:6px 0}
+.shake{animation:shake .35s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.pop{animation:pop .3s}
+@keyframes pop{50%{transform:scale(1.15)}}
+.mistakes{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0}
+.mistakes span{background:color-mix(in srgb,var(--bad) 14%,var(--card));border-radius:10px;padding:4px 10px;font-weight:700}
+.foot{text-align:center;margin-top:20px}
+.foot button{color:var(--muted);text-decoration:underline;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+(function(){
+const MAX = 9;           // учим таблицы от 2 до 9
+const PASS_MISTAKES = 3; // сколько ошибок можно, чтобы пройти тренажёр
+const KEY = 'mult-trainer-v1';
+
+// ---------- путь обучения ----------
+// 2: учим → тренажёр
+// 3: учим → тренажёр → повторяем 2 → тренажёр 2 и 3
+// 4: учим → тренажёр → повторяем 2–3 → тренажёр 2, 3 и 4 ... и так до 9
+const steps = [];
+for (let n = 2; n <= MAX; n++) {
+  steps.push({type:'learn', tables:[n], stage:n});
+  steps.push({type:'train', tables:[n], stage:n});
+  if (n > 2) {
+    const prev = range(2, n-1);
+    steps.push({type:'review', tables:prev, stage:n});
+    steps.push({type:'mix', tables:range(2, n), stage:n});
+  }
+}
+steps.push({type:'mix', tables:range(2, MAX), stage:'final', final:true});
+
+function range(a,b){const r=[];for(let i=a;i<=b;i++)r.push(i);return r}
+function list(t){ if(t.length===1) return 'на '+t[0]; if(t.length===2) return 'на '+t[0]+' и '+t[1];
+  return 'на '+t.slice(0,-1).join(', ')+' и '+t[t.length-1]; }
+function stepTitle(s){
+  if(s.final) return 'Большой экзамен';
+  if(s.type==='learn') return 'Учим '+list(s.tables);
+  if(s.type==='train') return 'Тренажёр '+list(s.tables);
+  if(s.type==='review') return 'Повторяем '+list(s.tables);
+  return 'Тренажёр '+list(s.tables);
+}
+function stepSub(s){
+  if(s.final) return 'Все таблицы от 2 до '+MAX+' — 20 примеров';
+  if(s.type==='learn') return 'Смотрим и запоминаем';
+  if(s.type==='train') return '10 примеров';
+  if(s.type==='review') return 'Вспоминаем выученное';
+  return '15 примеров вперемешку';
+}
+const ICON = {learn:'📖', train:'🎯', review:'🔁', mix:'🧩'};
+
+// ---------- сохранение ----------
+let state = load();
+function load(){
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.stars) return s; } catch(e){}
+  return {stars:{}};
+}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+function doneCount(){ return Object.keys(state.stars).length; }
+function unlocked(i){ return i===0 || state.stars[i-1] !== undefined; }
+function currentIndex(){ for(let i=0;i<steps.length;i++) if(state.stars[i]===undefined) return i; return -1; }
+function totalStars(){ return Object.values(state.stars).reduce((a,b)=>a+b,0); }
+
+// ---------- подсказки ----------
+const TIPS = {
+  2:'Умножить на 2 — это сложить число с самим собой: 6 × 2 = 6 + 6 = 12. Все ответы — чётные числа!',
+  3:'Каждый следующий ответ на 3 больше: 3, 6, 9, 12, 15… Можно считать тройками.',
+  4:'Умножить на 4 — это два раза удвоить: 7 × 4 → 7 × 2 = 14 → 14 × 2 = 28.',
+  5:'Ответы на 5 всегда заканчиваются на 0 или 5. Чётное число × 5 → в конце 0, нечётное → 5.',
+  6:'6 × чётное число: ответ заканчивается той же цифрой! 6 × 4 = 24, 6 × 6 = 36, 6 × 8 = 48.',
+  7:'Самая хитрая таблица! Запомни: 7 × 7 = 49, 7 × 8 = 56 (5, 6, 7, 8 — по порядку: 56 = 7 × 8).',
+  8:'Умножить на 8 — три раза удвоить: 3 → 6 → 12 → 24. Значит, 3 × 8 = 24.',
+  9:'Секрет девятки: сумма цифр ответа равна 9 (18 → 1+8, 27 → 2+7). А первая цифра на 1 меньше числа: 9 × 6 = 54.'
+};
+
+// ---------- экран ----------
+const app = document.getElementById('app');
+function h(html){ app.innerHTML = html; window.scrollTo(0,0); }
+function starsText(n){ return '⭐'.repeat(n) + '☆'.repeat(3-n); }
+
+function home(){
+  const cur = currentIndex();
+  const pct = Math.round(doneCount()/steps.length*100);
+  let html = `<header><h1>✖️ Таблица умножения</h1><span class="pill">⭐ ${totalStars()}</span></header>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:8px">
+      <span>Пройдено ${doneCount()} из ${steps.length}</span><span>${pct}%</span></div>
+    <div class="progress"><i style="width:${pct}%"></i></div>
+    <div style="margin-top:14px">${cur>=0
+      ? `<button class="big-btn" data-step="${cur}">▶ Продолжить: ${stepTitle(steps[cur])}</button>`
+      : `<div style="text-align:center;font-size:20px;font-weight:800">🏆 Ты выучил всю таблицу умножения!</div>`}</div>
+  </div>`;
+  let last = null;
+  steps.forEach((s,i)=>{
+    if (s.stage!==last){
+      last = s.stage;
+      html += `<div class="stage-title">${s.stage==='final' ? '🏁 Финиш' : 'Шаг: умножение на '+s.stage}</div>`;
+    }
+    const lock = !unlocked(i), st = state.stars[i];
+    const kind = s.final ? 'mix' : s.type;
+    html += `<button class="step ${lock?'locked':''} ${i===cur?'current':''}" data-step="${i}" ${lock?'disabled':''}>
+      <span class="ico t-${kind}">${lock?'🔒':(s.final?'🏆':ICON[s.type])}</span>
+      <span class="txt"><b>${stepTitle(s)}</b><span>${stepSub(s)}</span></span>
+      <span class="st">${st!==undefined ? (s.type==='learn'||s.type==='review' ? '✅' : starsText(st)) : ''}</span>
+    </button>`;
+  });
+  html += `<div class="foot"><button id="reset">Начать заново</button></div>`;
+  h(html);
+  app.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>openStep(+b.dataset.step));
+  document.getElementById('reset').onclick=()=>{
+    if(confirm('Стереть весь прогресс и начать сначала?')){ state={stars:{}}; save(); home(); }
+  };
+}
+
+function openStep(i){
+  if(!unlocked(i)) return;
+  const s = steps[i];
+  if (s.type==='learn') learn(i, s.tables[0]);
+  else if (s.type==='review') review(i, s.tables);
+  else trainer(i, s.tables, s.final ? 20 : (s.type==='mix' ? 15 : 10));
+}
+
+function topBar(title){
+  return `<header><button class="back" id="back">← Назад</button><h1 style="font-size:19px;text-align:right">${title}</h1></header>`;
+}
+function bindBack(){ document.getElementById('back').onclick = home; }
+
+// ---------- учим ----------
+function tableRows(n, hideAll){
+  let r = '';
+  for(let k=1;k<=10;k++){
+    let dots=''; if(n*k<=40) for(let d=0; d<n*k; d++) dots+='<i></i>';
+    r += `<button class="row" data-k="${k}">
+      <span>${n} × ${k} =</span>
+      <span style="display:flex;align-items:center;gap:10px"><span class="dots">${hideAll?'':dots}</span>
+      <span class="ans ${hideAll?'hidden':''}">${n*k}</span></span></button>`;
+  }
+  return r;
+}
+function learn(i, n){
+  let hide = false;
+  function draw(){
+    h(`${topBar('Учим на '+n)}
+    <div class="card">
+      <div class="tip">💡 ${TIPS[n]}</div>
+      <div class="toggle">
+        <button id="show" style="${!hide?'background:var(--learn);color:#fff;border-color:var(--learn)':''}">👀 Смотрю</button>
+        <button id="hide" style="${hide?'background:var(--learn);color:#fff;border-color:var(--learn)':''}">🙈 Проверяю себя</button>
+      </div>
+      <p class="muted" style="margin:6px 2px 10px">${hide?'Скажи ответ вслух, потом нажми на строчку и проверь.':'Прочитай каждую строчку вслух 2–3 раза.'}</p>
+      <div class="rows">${tableRows(n, hide)}</div>
+    </div>
+    <button class="big-btn blue" id="done">Я выучил! К тренажёру →</button>`);
+    bindBack();
+    document.getElementById('show').onclick=()=>{hide=false;draw()};
+    document.getElementById('hide').onclick=()=>{hide=true;draw()};
+    app.querySelectorAll('.row').forEach(r=>r.onclick=()=>{ const a=r.querySelector('.ans'); a.classList.toggle('hidden'); a.classList.add('pop'); setTimeout(()=>a.classList.remove('pop'),300); });
+    document.getElementById('done').onclick=()=>{ if(state.stars[i]===undefined){state.stars[i]=3;save();} openStep(i+1); };
+  }
+  draw();
+}
+
+// ---------- повторяем ----------
+function review(i, tables){
+  let cur = tables[0], hide = false;
+  function draw(){
+    h(`${topBar('Повторяем')}
+    <div class="card">
+      <div class="tabs">${tables.map(t=>`<button data-t="${t}" class="${t===cur?'on':''}">× ${t}</button>`).join('')}</div>
+      <div class="toggle">
+        <button id="show" style="${!hide?'background:var(--review);color:#fff;border-color:var(--review)':''}">👀 Смотрю</button>
+        <button id="hide" style="${hide?'background:var(--review);color:#fff;border-color:var(--review)':''}">🙈 Проверяю себя</button>
+      </div>
+      <div class="tip">💡 ${TIPS[cur]}</div>
+      <div class="rows">${tableRows(cur, hide)}</div>
+    </div>
+    <button class="big-btn blue" id="done">Повторил! К тренажёру →</button>`);
+    bindBack();
+    app.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{cur=+b.dataset.t;draw()});
+    document.getElementById('show').onclick=()=>{hide=false;draw()};
+    document.getElementById('hide').onclick=()=>{hide=true;draw()};
+    app.querySelectorAll('.row').forEach(r=>r.onclick=()=>r.querySelector('.ans').classList.toggle('hidden'));
+    document.getElementById('done').onclick=()=>{ if(state.stars[i]===undefined){state.stars[i]=3;save();} openStep(i+1); };
+  }
+  draw();
+}
+
+// ---------- тренажёр ----------
+function makeQuestions(tables, count){
+  // все пары, перемешиваем; новые таблицы (последняя) встречаются чаще
+  const pool = [];
+  tables.forEach((t,idx)=>{
+    const weight = (tables.length>1 && idx===tables.length-1) ? 2 : 1;
+    for(let k=1;k<=10;k++) for(let w=0;w<weight;w++){
+      // иногда переставляем множители: 3 × 7 и 7 × 3
+      pool.push(Math.random()<.3 ? {a:k,b:t} : {a:t,b:k});
+    }
+  });
+  shuffle(pool);
+  const out = [], seen = new Set();
+  for(const q of pool){ const key=Math.min(q.a,q.b)+'x'+Math.max(q.a,q.b);
+    if(seen.has(key)) continue; seen.add(key); out.push(q); if(out.length>=count) break; }
+  while(out.length<count) out.push(pool[Math.floor(Math.random()*pool.length)]);
+  return out;
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a; }
+
+let keyHandler = null;
+function trainer(i, tables, count){
+  const queue = makeQuestions(tables, count);
+  const total = count;
+  let solved = 0, mistakes = 0, wrongList = [], input = '', locked = false, firstTry = true;
+  const praise = ['Молодец! 🎉','Верно! 👍','Супер! ⭐','Отлично! 💪','Так держать! 🚀','Правильно! ✅'];
+
+  function draw(){
+    const q = queue[0];
+    h(`${topBar(stepTitle(steps[i]))}
+    <div class="card">
+      <div class="hud"><span>${solved}/${total}</span><div class="progress"><i style="width:${solved/total*100}%"></i></div><span>❌ ${mistakes}</span></div>
+      <div class="q">${q.a} × ${q.b}</div>
+      <div class="answer" id="ans">${input||'&nbsp;'}</div>
+      <div class="feedback" id="fb">&nbsp;</div>
+      <div class="pad">
+        ${[1,2,3,4,5,6,7,8,9].map(d=>`<button data-d="${d}">${d}</button>`).join('')}
+        <button class="del" data-d="del">⌫</button><button data-d="0">0</button><button class="go" data-d="ok">✔</button>
+      </div>
+    </div>`);
+    bindBack();
+    app.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>press(b.dataset.d));
+  }
+  function setAns(cls){ const el=document.getElementById('ans'); el.className='answer '+(cls||''); el.innerHTML=input||'&nbsp;'; }
+  function press(d){
+    if(locked) return;
+    if(d==='del'){ input=input.slice(0,-1); setAns(); return; }
+    if(d==='ok'){ check(); return; }
+    if(input.length<3){ input+=d; setAns(); }
+  }
+  function check(){
+    if(!input) return;
+    const q = queue[0], right = q.a*q.b, fb = document.getElementById('fb');
+    locked = true;
+    if(+input===right){
+      setAns('ok'); fb.style.color='var(--ok)'; fb.textContent = praise[Math.floor(Math.random()*praise.length)];
+      queue.shift(); solved++; firstTry = true;
+      setTimeout(next, 650);
+    } else {
+      if(firstTry){ mistakes++; wrongList.push(q.a+' × '+q.b+' = '+right); }
+      firstTry = false;
+      setAns('bad'); document.getElementById('ans').classList.add('shake');
+      fb.style.color='var(--bad)'; fb.textContent = `Не совсем. ${q.a} × ${q.b} = ${right}. Напиши ещё раз!`;
+      setTimeout(()=>{ input=''; setAns(); locked=false; }, 1400);
+    }
+  }
+  function next(){
+    input=''; locked=false;
+    if(queue.length===0) return finish();
+    draw();
+  }
+  function finish(){
+    detachKeys();
+    const pass = mistakes <= (count>10 ? PASS_MISTAKES+1 : PASS_MISTAKES);
+    const stars = mistakes===0 ? 3 : mistakes<=1 ? 2 : 1;
+    if(pass){ state.stars[i] = Math.max(state.stars[i]||0, stars); save(); }
+    const nextI = i+1 < steps.length ? i+1 : -1;
+    h(`${topBar('Результат')}
+    <div class="card result">
+      <div class="stars">${pass ? starsText(stars) : '😕'}</div>
+      <h2>${pass ? (mistakes===0?'Без единой ошибки!':'Тренажёр пройден!') : 'Почти получилось!'}</h2>
+      <p class="muted">Ошибок: ${mistakes}. ${pass ? '' : 'Чтобы пройти, нужно ошибиться не больше '+(count>10?PASS_MISTAKES+1:PASS_MISTAKES)+' раз.'}</p>
+      ${wrongList.length?`<p style="margin-bottom:4px"><b>Повтори эти примеры:</b></p><div class="mistakes">${wrongList.map(w=>`<span>${w}</span>`).join('')}</div>`:''}
+    </div>
+    ${pass && nextI>=0 ? `<button class="big-btn" id="next">Дальше: ${stepTitle(steps[nextI])} →</button>` : ''}
+    ${pass && nextI<0 ? `<div class="card result"><h2>🏆 Ура! Вся таблица умножения выучена!</h2></div>` : ''}
+    <button class="big-btn ${pass?'ghost':''}" id="again">🔄 Ещё раз</button>
+    <button class="big-btn ghost" id="map">🗺 К списку шагов</button>`);
+    bindBack();
+    const n = document.getElementById('next'); if(n) n.onclick=()=>openStep(nextI);
+    document.getElementById('again').onclick=()=>openStep(i);
+    document.getElementById('map').onclick=home;
+  }
+  function detachKeys(){ if(keyHandler){ document.removeEventListener('keydown', keyHandler); keyHandler=null; } }
+  detachKeys();
+  keyHandler = e=>{
+    if(!document.getElementById('ans')) return detachKeys();
+    if(/^[0-9]$/.test(e.key)) press(e.key);
+    else if(e.key==='Backspace') press('del');
+    else if(e.key==='Enter') press('ok');
+  };
+  document.addEventListener('keydown', keyHandler);
+  draw();
+}
+
+home();
+})();
+</script>
+</body>
+</html>
