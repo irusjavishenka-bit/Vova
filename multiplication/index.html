@@ -7,32 +7,49 @@
 <style>
 :root{
   --bg:#fff8ec; --card:#ffffff; --ink:#2b2340; --muted:#7a7290; --line:#eadfcb;
-  --accent:#ff7a3d; --accent2:#4c8dff; --ok:#2fb36d; --bad:#e5484d; --lock:#c9c1b3;
-  --learn:#4c8dff; --train:#ff7a3d; --review:#9b5de5; --mix:#2fb36d;
+  --accent:#ff7a3d; --accent2:#4c8dff; --ok:#2fb36d; --bad:#e5484d; --lock:#c9c1b3; --gold:#ffc83d;
+  --learn:#4c8dff; --train:#ff7a3d; --review:#9b5de5; --mix:#2fb36d; --bubble:#fff1c9;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#1b1726; --card:#262036; --ink:#f3eefc; --muted:#a79fbd; --line:#3a3150; --lock:#4a4260;
+    --bg:#1b1726; --card:#262036; --ink:#f3eefc; --muted:#a79fbd; --line:#3a3150; --lock:#4a4260; --bubble:#3b3352;
   }
 }
-:root[data-theme="dark"]{ --bg:#1b1726; --card:#262036; --ink:#f3eefc; --muted:#a79fbd; --line:#3a3150; --lock:#4a4260; }
+:root[data-theme="dark"]{ --bg:#1b1726; --card:#262036; --ink:#f3eefc; --muted:#a79fbd; --line:#3a3150; --lock:#4a4260; --bubble:#3b3352; }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS",system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-body{min-height:100vh;-webkit-tap-highlight-color:transparent}
+body{min-height:100vh;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 .wrap{max-width:560px;margin:0 auto;padding:16px}
 header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
-header h1{font-size:22px;margin:0}
+header h1{font-size:21px;margin:0}
+.hdr-r{display:flex;gap:6px;align-items:center}
 .pill{background:var(--card);border:2px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:700}
 .back{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:8px 12px;font-weight:700}
 .card{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:16px;margin-bottom:14px}
 .muted{color:var(--muted)}
-.big-btn{display:block;width:100%;padding:16px;border-radius:16px;background:var(--accent);color:#fff;font-size:20px;font-weight:800;box-shadow:0 4px 0 rgba(0,0,0,.18)}
+.big-btn{display:block;width:100%;padding:16px;border-radius:16px;background:var(--accent);color:#fff;font-size:20px;font-weight:800;box-shadow:0 4px 0 rgba(0,0,0,.18);margin-bottom:10px}
 .big-btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.18)}
 .big-btn.blue{background:var(--accent2)}
-.big-btn.ghost{background:var(--card);color:var(--ink);border:2px solid var(--line);box-shadow:none;margin-top:10px}
-/* path */
-.stage-title{font-size:15px;font-weight:800;color:var(--muted);margin:18px 4px 8px;text-transform:uppercase;letter-spacing:.04em}
+.big-btn.ghost{background:var(--card);color:var(--ink);border:2px solid var(--line);box-shadow:none}
+
+/* маскот */
+.mascot{display:flex;align-items:flex-end;gap:10px;margin:4px 0 14px}
+.mascot .who{font-size:52px;line-height:1;animation:bob 2.4s ease-in-out infinite;flex:none}
+.mascot .say{position:relative;background:var(--bubble);border-radius:18px;padding:12px 14px;font-size:16px;line-height:1.4;font-weight:600;flex:1}
+.mascot .say:before{content:"";position:absolute;left:-8px;bottom:14px;border:8px solid transparent;border-right-color:var(--bubble);border-left:0}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-6px) rotate(3deg)}}
+
+/* друзья */
+.friends{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px}
+.friends span{width:44px;height:44px;display:grid;place-items:center;font-size:28px;border-radius:12px;background:var(--bg);border:2px solid var(--line)}
+.friends span.no{filter:grayscale(1);opacity:.3}
+
+/* карта */
+.island{display:flex;align-items:center;gap:10px;margin:22px 4px 8px}
+.island .ani{font-size:34px}
+.island b{font-size:17px;display:block}
+.island small{color:var(--muted);font-weight:700}
 .step{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px;margin-bottom:8px}
 .step .ico{width:46px;height:46px;flex:none;border-radius:14px;display:grid;place-items:center;font-size:24px;color:#fff}
 .step .txt{flex:1;min-width:0}
@@ -41,88 +58,137 @@ header h1{font-size:22px;margin:0}
 .step .st{font-size:18px;white-space:nowrap}
 .step.locked{opacity:.55;cursor:not-allowed}
 .step.locked .ico{background:var(--lock)!important}
-.step.current{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.step.current{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent);animation:glow 1.6s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 15%,transparent)}}
 .t-learn{background:var(--learn)}.t-train{background:var(--train)}.t-review{background:var(--review)}.t-mix{background:var(--mix)}
 .progress{height:12px;background:var(--line);border-radius:99px;overflow:hidden}
 .progress i{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .3s}
-/* learn table */
+
+/* учим */
 .rows{display:grid;gap:8px}
-.row{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border:2px solid var(--line);border-radius:14px;padding:10px 14px;font-size:24px;font-weight:800}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg);border:2px solid var(--line);border-radius:14px;padding:10px 12px;font-size:23px;font-weight:800;width:100%}
+.row .l{display:flex;flex-direction:column;align-items:flex-start;text-align:left}
+.row .tag{font-size:12px;font-weight:800;border-radius:8px;padding:2px 8px;margin-top:3px}
+.tag.known{background:color-mix(in srgb,var(--review) 18%,var(--card));color:var(--review)}
+.tag.new{background:color-mix(in srgb,var(--accent) 18%,var(--card));color:var(--accent)}
+.tag.easy{background:color-mix(in srgb,var(--ok) 18%,var(--card));color:var(--ok)}
 .row .ans{min-width:64px;text-align:center;border-radius:10px;padding:2px 8px;background:var(--accent2);color:#fff}
 .row .ans.hidden{background:var(--line);color:transparent}
-.dots{display:flex;flex-wrap:wrap;gap:3px;max-width:150px;justify-content:flex-end}
-.dots i{width:9px;height:9px;border-radius:50%;background:var(--accent)}
+.row .swap{display:block;font-size:13px;font-weight:700;color:var(--review);margin-top:4px;text-align:left}
+.dots{display:flex;flex-wrap:wrap;gap:3px;max-width:120px;justify-content:flex-end}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--accent)}
 .tip{background:color-mix(in srgb,var(--accent2) 14%,var(--card));border-radius:14px;padding:12px;margin:12px 0;font-size:16px;line-height:1.4}
+.score{display:flex;gap:8px;margin:10px 0}
+.score div{flex:1;text-align:center;border-radius:14px;padding:10px 4px;font-weight:800}
+.score div b{display:block;font-size:28px}
 .tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
-.tabs button{padding:8px 14px;border-radius:12px;border:2px solid var(--line);background:var(--card);font-weight:800;font-size:17px}
+.tabs button{padding:8px 12px;border-radius:12px;border:2px solid var(--line);background:var(--card);font-weight:800;font-size:17px}
 .tabs button.on{background:var(--review);border-color:var(--review);color:#fff}
 .toggle{display:flex;gap:8px;margin:10px 0}
 .toggle button{flex:1;padding:10px;border-radius:12px;border:2px solid var(--line);background:var(--card);font-weight:700}
-/* trainer */
-.q{font-size:52px;font-weight:900;text-align:center;margin:8px 0 4px;letter-spacing:.02em}
-.answer{font-size:44px;font-weight:900;text-align:center;min-height:64px;border-bottom:4px solid var(--line);margin:0 auto 10px;max-width:180px}
+.toggle button.on{color:#fff}
+
+/* волшебная перестановка */
+.magic{text-align:center}
+.magic h3{margin:0 0 6px}
+.grid-wrap{min-height:150px;display:grid;place-items:center;margin:8px 0}
+.dgrid{display:inline-grid;gap:6px;transition:transform .5s}
+.dgrid i{width:16px;height:16px;border-radius:50%;background:var(--accent);display:block}
+.dgrid.spin{animation:spin .6s ease}
+@keyframes spin{0%{transform:rotate(0) scale(1)}50%{transform:rotate(90deg) scale(.8)}100%{transform:rotate(0) scale(1)}}
+.eq{font-size:30px;font-weight:900;margin:4px 0 10px}
+.eq .x{color:var(--review)}
+.small-btn{padding:10px 18px;border-radius:12px;background:var(--review);color:#fff;font-weight:800;font-size:17px}
+
+/* тренажёр */
+.road{position:relative;height:48px;margin:2px 0 6px;border-radius:24px;background:repeating-linear-gradient(90deg,var(--line) 0 14px,transparent 14px 24px) center/100% 4px no-repeat}
+.road .runner{position:absolute;top:2px;font-size:36px;transition:left .5s cubic-bezier(.5,1.6,.5,1);transform:translateX(-50%)}
+.road .goal{position:absolute;right:-4px;top:4px;font-size:32px}
+.hud{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:800}
+.combo{color:var(--accent);min-height:22px}
+.q{font-size:54px;font-weight:900;text-align:center;margin:6px 0 4px;letter-spacing:.02em}
+.answer{font-size:44px;font-weight:900;text-align:center;min-height:64px;border-bottom:4px solid var(--line);margin:0 auto 8px;max-width:180px}
 .answer.ok{color:var(--ok);border-color:var(--ok)}
 .answer.bad{color:var(--bad);border-color:var(--bad)}
-.feedback{text-align:center;min-height:28px;font-size:18px;font-weight:700;margin-bottom:8px}
+.feedback{text-align:center;min-height:28px;font-size:17px;font-weight:700;margin-bottom:8px;line-height:1.35}
+.hintbox{background:var(--bubble);border-radius:14px;padding:10px 12px;margin-bottom:10px;font-size:16px;font-weight:600;line-height:1.4}
+.hint-btn{display:block;margin:0 auto 10px;padding:6px 14px;border-radius:99px;border:2px dashed var(--review);color:var(--review);font-weight:800}
 .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.pad button{padding:16px 0;font-size:28px;font-weight:800;border-radius:14px;background:var(--card);border:2px solid var(--line);box-shadow:0 3px 0 var(--line)}
+.pad button{padding:15px 0;font-size:28px;font-weight:800;border-radius:14px;background:var(--card);border:2px solid var(--line);box-shadow:0 3px 0 var(--line)}
 .pad button:active{transform:translateY(2px);box-shadow:none}
 .pad .go{background:var(--ok);border-color:var(--ok);color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.2)}
 .pad .del{color:var(--bad)}
-.hud{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;font-weight:700}
-.hud .progress{flex:1}
 .result{text-align:center}
 .result .stars{font-size:54px;margin:6px 0}
+.result .stars span{display:inline-block;animation:starIn .5s both}
+@keyframes starIn{0%{transform:scale(0) rotate(-90deg)}80%{transform:scale(1.3)}100%{transform:scale(1)}}
 .result h2{margin:6px 0}
+.newfriend{font-size:80px;animation:starIn .7s both .3s;display:inline-block}
 .shake{animation:shake .35s}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 .pop{animation:pop .3s}
 @keyframes pop{50%{transform:scale(1.15)}}
+.jump{animation:jump .5s}
+@keyframes jump{40%{transform:translate(-50%,-14px)}}
 .mistakes{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0}
 .mistakes span{background:color-mix(in srgb,var(--bad) 14%,var(--card));border-radius:10px;padding:4px 10px;font-weight:700}
 .foot{text-align:center;margin-top:20px}
 .foot button{color:var(--muted);text-decoration:underline;font-size:14px}
+.confetti{position:fixed;top:-20px;width:10px;height:14px;z-index:50;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+.float{position:fixed;z-index:50;pointer-events:none;font-size:30px;font-weight:900;animation:floatUp 1s ease-out forwards}
+@keyframes floatUp{to{transform:translateY(-80px);opacity:0}}
 </style>
 </head>
 <body>
 <div class="wrap" id="app"></div>
 <script>
 (function(){
-const MAX = 9;           // учим таблицы от 2 до 9
-const PASS_MISTAKES = 3; // сколько ошибок можно, чтобы пройти тренажёр
+const MAX = 9;
+const PASS_MISTAKES = 3;
 const KEY = 'mult-trainer-v1';
 
+// жители островов: каждая таблица — свой остров и свой друг
+const FRIENDS = {
+  2:{e:'🐰', name:'Зайчик',     island:'Морковный остров'},
+  3:{e:'🐻', name:'Мишка',      island:'Медовый лес'},
+  4:{e:'🦊', name:'Лисичка',    island:'Рыжая поляна'},
+  5:{e:'🐸', name:'Лягушонок',  island:'Кувшинковое озеро'},
+  6:{e:'🐼', name:'Панда',      island:'Бамбуковая роща'},
+  7:{e:'🦁', name:'Лев',        island:'Солнечная саванна'},
+  8:{e:'🐙', name:'Осьминог',   island:'Морская глубина'},
+  9:{e:'🐉', name:'Дракон',     island:'Огненная гора'},
+  final:{e:'👑', name:'Корона Чемпиона', island:'Замок Чемпиона'}
+};
+
 // ---------- путь обучения ----------
-// 2: учим → тренажёр
-// 3: учим → тренажёр → повторяем 2 → тренажёр 2 и 3
-// 4: учим → тренажёр → повторяем 2–3 → тренажёр 2, 3 и 4 ... и так до 9
 const steps = [];
 for (let n = 2; n <= MAX; n++) {
   steps.push({type:'learn', tables:[n], stage:n});
   steps.push({type:'train', tables:[n], stage:n});
   if (n > 2) {
-    const prev = range(2, n-1);
-    steps.push({type:'review', tables:prev, stage:n});
+    steps.push({type:'review', tables:range(2, n-1), stage:n});
     steps.push({type:'mix', tables:range(2, n), stage:n});
   }
 }
 steps.push({type:'mix', tables:range(2, MAX), stage:'final', final:true});
+const lastOfStage = {};
+steps.forEach((s,i)=>lastOfStage[s.stage]=i);
 
 function range(a,b){const r=[];for(let i=a;i<=b;i++)r.push(i);return r}
 function list(t){ if(t.length===1) return 'на '+t[0]; if(t.length===2) return 'на '+t[0]+' и '+t[1];
   return 'на '+t.slice(0,-1).join(', ')+' и '+t[t.length-1]; }
 function stepTitle(s){
-  if(s.final) return 'Большой экзамен';
+  if(s.final) return 'Битва Чемпиона';
   if(s.type==='learn') return 'Учим '+list(s.tables);
-  if(s.type==='train') return 'Тренажёр '+list(s.tables);
   if(s.type==='review') return 'Повторяем '+list(s.tables);
   return 'Тренажёр '+list(s.tables);
 }
 function stepSub(s){
   if(s.final) return 'Все таблицы от 2 до '+MAX+' — 20 примеров';
-  if(s.type==='learn') return 'Смотрим и запоминаем';
+  if(s.type==='learn') return 'Знакомимся и запоминаем';
   if(s.type==='train') return '10 примеров';
-  if(s.type==='review') return 'Вспоминаем выученное';
+  if(s.type==='review') return 'Вспоминаем старых друзей';
   return '15 примеров вперемешку';
 }
 const ICON = {learn:'📖', train:'🎯', review:'🔁', mix:'🧩'};
@@ -130,49 +196,123 @@ const ICON = {learn:'📖', train:'🎯', review:'🔁', mix:'🧩'};
 // ---------- сохранение ----------
 let state = load();
 function load(){
-  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.stars) return s; } catch(e){}
-  return {stars:{}};
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.stars) { if(s.sound===undefined) s.sound=true; return s; } } catch(e){}
+  return {stars:{}, sound:true};
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
 function doneCount(){ return Object.keys(state.stars).length; }
 function unlocked(i){ return i===0 || state.stars[i-1] !== undefined; }
 function currentIndex(){ for(let i=0;i<steps.length;i++) if(state.stars[i]===undefined) return i; return -1; }
 function totalStars(){ return Object.values(state.stars).reduce((a,b)=>a+b,0); }
+function hasFriend(stage){ return state.stars[lastOfStage[stage]] !== undefined; }
+
+// ---------- звуки и праздник ----------
+let actx = null;
+function beep(notes){
+  if(!state.sound) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    let t = actx.currentTime;
+    notes.forEach(([f,d])=>{
+      const o=actx.createOscillator(), g=actx.createGain();
+      o.type='triangle'; o.frequency.value=f; o.connect(g); g.connect(actx.destination);
+      g.gain.setValueAtTime(.18,t); g.gain.exponentialRampToValueAtTime(.001,t+d);
+      o.start(t); o.stop(t+d); t+=d*.8;
+    });
+  }catch(e){}
+}
+const SND = {
+  ok:()=>beep([[660,.12],[880,.18]]),
+  bad:()=>beep([[220,.25]]),
+  tap:()=>beep([[520,.05]]),
+  win:()=>beep([[523,.15],[659,.15],[784,.15],[1047,.35]])
+};
+function confetti(n){
+  const colors=['#ff7a3d','#4c8dff','#2fb36d','#ffc83d','#9b5de5','#e5484d'];
+  for(let i=0;i<n;i++){
+    const c=document.createElement('i'); c.className='confetti';
+    c.style.left=Math.random()*100+'vw'; c.style.background=colors[i%colors.length];
+    c.style.animationDuration=(1.5+Math.random()*1.5)+'s'; c.style.animationDelay=(Math.random()*.4)+'s';
+    c.style.borderRadius=Math.random()<.5?'50%':'2px';
+    document.body.appendChild(c); setTimeout(()=>c.remove(),3500);
+  }
+}
+function floatText(txt, el){
+  const r = el.getBoundingClientRect(), f=document.createElement('div');
+  f.className='float'; f.textContent=txt; f.style.left=(r.left+r.width/2-20)+'px'; f.style.top=(r.top)+'px';
+  document.body.appendChild(f); setTimeout(()=>f.remove(),1000);
+}
 
 // ---------- подсказки ----------
 const TIPS = {
-  2:'Умножить на 2 — это сложить число с самим собой: 6 × 2 = 6 + 6 = 12. Все ответы — чётные числа!',
-  3:'Каждый следующий ответ на 3 больше: 3, 6, 9, 12, 15… Можно считать тройками.',
-  4:'Умножить на 4 — это два раза удвоить: 7 × 4 → 7 × 2 = 14 → 14 × 2 = 28.',
-  5:'Ответы на 5 всегда заканчиваются на 0 или 5. Чётное число × 5 → в конце 0, нечётное → 5.',
+  2:'Умножить на 2 — это сложить число с самим собой: 6 × 2 = 6 + 6 = 12. Все ответы — чётные!',
+  3:'Каждый следующий ответ на 3 больше: 3, 6, 9, 12, 15… Шагаем тройками, как Мишка по ступенькам.',
+  4:'Умножить на 4 — это два раза удвоить: 7 × 4 → 7 + 7 = 14 → 14 + 14 = 28.',
+  5:'Ответы на 5 всегда заканчиваются на 0 или 5 — как стрелки на часах: 5, 10, 15, 20…',
   6:'6 × чётное число: ответ заканчивается той же цифрой! 6 × 4 = 24, 6 × 6 = 36, 6 × 8 = 48.',
-  7:'Самая хитрая таблица! Запомни: 7 × 7 = 49, 7 × 8 = 56 (5, 6, 7, 8 — по порядку: 56 = 7 × 8).',
-  8:'Умножить на 8 — три раза удвоить: 3 → 6 → 12 → 24. Значит, 3 × 8 = 24.',
-  9:'Секрет девятки: сумма цифр ответа равна 9 (18 → 1+8, 27 → 2+7). А первая цифра на 1 меньше числа: 9 × 6 = 54.'
+  7:'Самая хитрая таблица! Зато новых примеров совсем мало. Запомни: 7 × 8 = 56 — «5, 6, 7, 8» по порядку!',
+  8:'Умножить на 8 — три раза удвоить: 3 → 6 → 12 → 24. Значит, 8 × 3 = 24.',
+  9:'Секрет Дракона: сумма цифр ответа всегда 9 (18 → 1+8, 27 → 2+7). А первая цифра на 1 меньше: 9 × 6 = 54.'
 };
 
-// ---------- экран ----------
+// подсказка к конкретному примеру a × b; learned — таблицы, которые уже учили раньше
+function hintFor(a, b, learned){
+  const small=Math.min(a,b), big=Math.max(a,b);
+  if (small===1) return `☝️ Умножить на 1 — число не меняется: ${a} × ${b} = ${big}.`;
+  if (a===10 || b===10) return `🔟 Умножить на 10 — просто припиши нолик: ${small===10?big:small} → ${(small===10?big:small)}0.`;
+  if (small!==big && learned.includes(small)) {
+    const swap = a===big
+      ? `🔄 Поменяй числа местами! ${a} × ${b} = ${b} × ${a}. `
+      : '';
+    return `${swap}Это пример из таблицы на ${small} — ты её уже знаешь, ${FRIENDS[small].e} ${FRIENDS[small].name} помнит! ${trick(small, big)}`;
+  }
+  return trick(a, b);
+}
+function trick(a, b){
+  // a — таблица, b — на сколько умножаем
+  if (a===2) return `➕ Сложи: ${b} + ${b}.`;
+  if (b===2) return `➕ Сложи: ${a} + ${a}.`;
+  if (a===4) return `✌️ Удвой два раза: ${b} → ${b*2} → …`;
+  if (a===5) return `🕐 Считай пятёрками, как минутки на часах: 5, 10, 15…`;
+  if (a===9) return `🐉 Секрет: ${b} × 10 = ${b*10}, а теперь отними ${b}.`;
+  if (a===8) return `✌️ Удвой три раза: ${b} → ${b*2} → ${b*4} → …`;
+  if (b===5) return `🕐 ${a} × 10 = ${a*10}, а половина от этого — ответ.`;
+  return `🪜 Вспомни ${a} × ${b-1} = ${a*(b-1)} и прибавь ещё ${a}.`;
+}
+
+// ---------- экраны ----------
 const app = document.getElementById('app');
 function h(html){ app.innerHTML = html; window.scrollTo(0,0); }
 function starsText(n){ return '⭐'.repeat(n) + '☆'.repeat(3-n); }
+function mascot(who, text){ return `<div class="mascot"><div class="who">${who}</div><div class="say">${text}</div></div>`; }
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
 
 function home(){
   const cur = currentIndex();
   const pct = Math.round(doneCount()/steps.length*100);
-  let html = `<header><h1>✖️ Таблица умножения</h1><span class="pill">⭐ ${totalStars()}</span></header>
+  const curStep = cur>=0 ? steps[cur] : null;
+  const guide = curStep ? FRIENDS[curStep.stage] : FRIENDS.final;
+  const hello = cur<0 ? 'Ура! Ты прошёл все острова и стал Чемпионом умножения! 🏆'
+    : cur===0 ? 'Привет! Я Зайчик 🐰. Поплыли по островам таблицы умножения? На каждом острове живёт новый друг!'
+    : pick([`Ты на острове «${guide.island}». Вперёд!`,'Я в тебя верю! 💪','Каждый день понемножку — и всё получится!',`Уже ${totalStars()} звёзд! Соберём ещё?`]);
+  let html = `<header><h1>✖️ Острова умножения</h1>
+    <div class="hdr-r"><button class="pill" id="snd">${state.sound?'🔊':'🔇'}</button><span class="pill">⭐ ${totalStars()}</span></div></header>
+  ${mascot(guide.e, hello)}
   <div class="card">
     <div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:8px">
       <span>Пройдено ${doneCount()} из ${steps.length}</span><span>${pct}%</span></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
-    <div style="margin-top:14px">${cur>=0
-      ? `<button class="big-btn" data-step="${cur}">▶ Продолжить: ${stepTitle(steps[cur])}</button>`
-      : `<div style="text-align:center;font-size:20px;font-weight:800">🏆 Ты выучил всю таблицу умножения!</div>`}</div>
+    <div style="margin-top:14px">${cur>=0 ? `<button class="big-btn" data-step="${cur}">▶ ${stepTitle(steps[cur])}</button>` : ''}</div>
+    <div style="text-align:center;font-weight:800;margin-top:4px">Мои друзья</div>
+    <div class="friends">${range(2,MAX).map(n=>`<span class="${hasFriend(n)?'':'no'}" title="${FRIENDS[n].name}">${FRIENDS[n].e}</span>`).join('')}
+      <span class="${hasFriend('final')?'':'no'}">👑</span></div>
   </div>`;
   let last = null;
   steps.forEach((s,i)=>{
     if (s.stage!==last){
-      last = s.stage;
-      html += `<div class="stage-title">${s.stage==='final' ? '🏁 Финиш' : 'Шаг: умножение на '+s.stage}</div>`;
+      last = s.stage; const f=FRIENDS[s.stage];
+      html += `<div class="island"><span class="ani">${f.e}</span><span><b>${f.island}</b>
+        <small>${s.stage==='final'?'Все таблицы':'Умножаем на '+s.stage} · ${f.name}</small></span></div>`;
     }
     const lock = !unlocked(i), st = state.stars[i];
     const kind = s.final ? 'mix' : s.type;
@@ -184,9 +324,10 @@ function home(){
   });
   html += `<div class="foot"><button id="reset">Начать заново</button></div>`;
   h(html);
-  app.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>openStep(+b.dataset.step));
+  app.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{ SND.tap(); openStep(+b.dataset.step); });
+  document.getElementById('snd').onclick=()=>{ state.sound=!state.sound; save(); home(); };
   document.getElementById('reset').onclick=()=>{
-    if(confirm('Стереть весь прогресс и начать сначала?')){ state={stars:{}}; save(); home(); }
+    if(confirm('Стереть весь прогресс и начать сначала?')){ state={stars:{},sound:state.sound}; save(); home(); }
   };
 }
 
@@ -197,67 +338,114 @@ function openStep(i){
   else if (s.type==='review') review(i, s.tables);
   else trainer(i, s.tables, s.final ? 20 : (s.type==='mix' ? 15 : 10));
 }
-
 function topBar(title){
   return `<header><button class="back" id="back">← Назад</button><h1 style="font-size:19px;text-align:right">${title}</h1></header>`;
 }
 function bindBack(){ document.getElementById('back').onclick = home; }
 
-// ---------- учим ----------
-function tableRows(n, hideAll){
+// строчки таблицы: n × k; learned — таблицы, выученные раньше
+function tableRows(n, hide, learned){
   let r = '';
   for(let k=1;k<=10;k++){
-    let dots=''; if(n*k<=40) for(let d=0; d<n*k; d++) dots+='<i></i>';
+    let dots=''; if(!hide && n*k<=30) for(let d=0; d<n*k; d++) dots+='<i></i>';
+    let tag='', swap='';
+    if(k===1) tag='<span class="tag easy">😎 легко</span>';
+    else if(k===10) tag='<span class="tag easy">🔟 припиши 0</span>';
+    else if(k<n && learned.includes(k)){ tag=`<span class="tag known">🔄 уже знаешь!</span>`;
+      swap=`<span class="swap">= ${k} × ${n} из таблицы на ${k} ${FRIENDS[k].e}</span>`; }
+    else if(k>=n) tag='<span class="tag new">🆕 новое</span>';
     r += `<button class="row" data-k="${k}">
-      <span>${n} × ${k} =</span>
-      <span style="display:flex;align-items:center;gap:10px"><span class="dots">${hideAll?'':dots}</span>
-      <span class="ans ${hideAll?'hidden':''}">${n*k}</span></span></button>`;
+      <span class="l"><span>${n} × ${k} =</span>${tag}${hide?'':swap}</span>
+      <span style="display:flex;align-items:center;gap:8px"><span class="dots">${dots}</span>
+      <span class="ans ${hide?'hidden':''}">${n*k}</span></span></button>`;
   }
   return r;
 }
+
+// карточка «Волшебная перестановка»: точки 2 × n поворачиваются в n × 2
+function magicCard(n, m){
+  return `<div class="card magic">
+    <h3>🪄 Волшебная перестановка</h3>
+    <div class="muted">Поверни картинку — точек останется столько же!</div>
+    <div class="grid-wrap"><div class="dgrid" id="dg"></div></div>
+    <div class="eq" id="eqn"></div>
+    <button class="small-btn" id="rot">🔄 Повернуть!</button>
+    <div class="tip" style="text-align:left">Значит, <b>${n} × ${m} = ${m} × ${n}</b>. Если числа поменять местами, ответ не меняется. Поэтому часть примеров ты <b>уже знаешь</b> из прошлых таблиц — и с каждым островом их всё больше!</div>
+  </div>`;
+}
+function bindMagic(n, m){
+  let flipped=false;
+  const dg=document.getElementById('dg'), eq=document.getElementById('eqn');
+  function draw(){
+    const rows = flipped ? n : m, cols = flipped ? m : n;
+    dg.style.gridTemplateColumns = `repeat(${cols},16px)`;
+    dg.innerHTML = '<i></i>'.repeat(rows*cols);
+    eq.innerHTML = `<span class="x">${rows} × ${cols}</span> = ${n*m}`;
+  }
+  draw();
+  document.getElementById('rot').onclick=()=>{
+    SND.tap(); dg.classList.remove('spin'); void dg.offsetWidth; dg.classList.add('spin');
+    setTimeout(()=>{flipped=!flipped; draw();},300);
+  };
+}
+
 function learn(i, n){
   let hide = false;
+  const learned = range(2, n-1);
+  const f = FRIENDS[n];
+  const known = learned.length, easy = 2, fresh = 10 - known - easy;
+  const intro = n===2
+    ? `Привет! Я ${f.name} ${f.e}. Умножать на 2 — проще простого: это число плюс оно же! Открой секрет внизу — он поможет на всех островах.`
+    : `Привет! Я ${f.name} ${f.e}. Хорошая новость: из 10 примеров ты уже знаешь ${known+easy}! Новых всего <b>${fresh}</b>. Примеры с 🔄 — переверни, и они из прошлых таблиц.`;
   function draw(){
-    h(`${topBar('Учим на '+n)}
+    h(`${topBar(f.island)}
+    ${mascot(f.e, intro)}
+    ${n>2 ? `<div class="card"><div class="score">
+      <div style="background:color-mix(in srgb,var(--review) 15%,var(--card))"><b>${known}</b>🔄 уже знаешь</div>
+      <div style="background:color-mix(in srgb,var(--ok) 15%,var(--card))"><b>${easy}</b>😎 легко</div>
+      <div style="background:color-mix(in srgb,var(--accent) 15%,var(--card))"><b>${fresh}</b>🆕 новых</div></div></div>` : ''}
     <div class="card">
       <div class="tip">💡 ${TIPS[n]}</div>
       <div class="toggle">
-        <button id="show" style="${!hide?'background:var(--learn);color:#fff;border-color:var(--learn)':''}">👀 Смотрю</button>
-        <button id="hide" style="${hide?'background:var(--learn);color:#fff;border-color:var(--learn)':''}">🙈 Проверяю себя</button>
+        <button id="show" class="${!hide?'on':''}" style="${!hide?'background:var(--learn);border-color:var(--learn)':''}">👀 Смотрю</button>
+        <button id="hide" class="${hide?'on':''}" style="${hide?'background:var(--learn);border-color:var(--learn)':''}">🙈 Проверяю себя</button>
       </div>
       <p class="muted" style="margin:6px 2px 10px">${hide?'Скажи ответ вслух, потом нажми на строчку и проверь.':'Прочитай каждую строчку вслух 2–3 раза.'}</p>
-      <div class="rows">${tableRows(n, hide)}</div>
+      <div class="rows">${tableRows(n, hide, learned)}</div>
     </div>
-    <button class="big-btn blue" id="done">Я выучил! К тренажёру →</button>`);
-    bindBack();
+    ${magicCard(n, n===2?4:2)}
+    <button class="big-btn blue" id="done">Я запомнил! К тренажёру →</button>`);
+    bindBack(); bindMagic(n, n===2?4:2);
     document.getElementById('show').onclick=()=>{hide=false;draw()};
     document.getElementById('hide').onclick=()=>{hide=true;draw()};
-    app.querySelectorAll('.row').forEach(r=>r.onclick=()=>{ const a=r.querySelector('.ans'); a.classList.toggle('hidden'); a.classList.add('pop'); setTimeout(()=>a.classList.remove('pop'),300); });
+    app.querySelectorAll('.row').forEach(r=>r.onclick=()=>{ SND.tap(); const a=r.querySelector('.ans'); a.classList.toggle('hidden'); a.classList.add('pop'); setTimeout(()=>a.classList.remove('pop'),300); });
     document.getElementById('done').onclick=()=>{ if(state.stars[i]===undefined){state.stars[i]=3;save();} openStep(i+1); };
   }
   draw();
 }
 
-// ---------- повторяем ----------
 function review(i, tables){
-  let cur = tables[0], hide = false;
+  let cur = tables[tables.length-1], hide = true;
+  const stage = steps[i].stage;
   function draw(){
+    const f = FRIENDS[cur];
     h(`${topBar('Повторяем')}
+    ${mascot(FRIENDS[stage].e, `Давай навестим старых друзей! ${tables.map(t=>FRIENDS[t].e).join(' ')} Сначала закрой ответы и проверь себя.`)}
     <div class="card">
-      <div class="tabs">${tables.map(t=>`<button data-t="${t}" class="${t===cur?'on':''}">× ${t}</button>`).join('')}</div>
+      <div class="tabs">${tables.map(t=>`<button data-t="${t}" class="${t===cur?'on':''}">${FRIENDS[t].e} × ${t}</button>`).join('')}</div>
       <div class="toggle">
-        <button id="show" style="${!hide?'background:var(--review);color:#fff;border-color:var(--review)':''}">👀 Смотрю</button>
-        <button id="hide" style="${hide?'background:var(--review);color:#fff;border-color:var(--review)':''}">🙈 Проверяю себя</button>
+        <button id="show" class="${!hide?'on':''}" style="${!hide?'background:var(--review);border-color:var(--review)':''}">👀 Смотрю</button>
+        <button id="hide" class="${hide?'on':''}" style="${hide?'background:var(--review);border-color:var(--review)':''}">🙈 Проверяю себя</button>
       </div>
       <div class="tip">💡 ${TIPS[cur]}</div>
-      <div class="rows">${tableRows(cur, hide)}</div>
+      <div class="rows">${tableRows(cur, hide, range(2, cur-1))}</div>
     </div>
     <button class="big-btn blue" id="done">Повторил! К тренажёру →</button>`);
     bindBack();
     app.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{cur=+b.dataset.t;draw()});
     document.getElementById('show').onclick=()=>{hide=false;draw()};
     document.getElementById('hide').onclick=()=>{hide=true;draw()};
-    app.querySelectorAll('.row').forEach(r=>r.onclick=()=>r.querySelector('.ans').classList.toggle('hidden'));
+    app.querySelectorAll('.row').forEach(r=>r.onclick=()=>{ SND.tap(); r.querySelector('.ans').classList.toggle('hidden'); });
     document.getElementById('done').onclick=()=>{ if(state.stars[i]===undefined){state.stars[i]=3;save();} openStep(i+1); };
   }
   draw();
@@ -265,13 +453,12 @@ function review(i, tables){
 
 // ---------- тренажёр ----------
 function makeQuestions(tables, count){
-  // все пары, перемешиваем; новые таблицы (последняя) встречаются чаще
   const pool = [];
   tables.forEach((t,idx)=>{
     const weight = (tables.length>1 && idx===tables.length-1) ? 2 : 1;
     for(let k=1;k<=10;k++) for(let w=0;w<weight;w++){
-      // иногда переставляем множители: 3 × 7 и 7 × 3
-      pool.push(Math.random()<.3 ? {a:k,b:t} : {a:t,b:k});
+      // часто переставляем множители: 7 × 3 и 3 × 7 — тренируем перестановку
+      pool.push(Math.random()<.35 ? {a:k,b:t} : {a:t,b:k});
     }
   });
   shuffle(pool);
@@ -285,19 +472,26 @@ function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.rando
 
 let keyHandler = null;
 function trainer(i, tables, count){
+  const s = steps[i];
+  const stage = s.stage, f = FRIENDS[stage];
+  // какие таблицы уже выучены к этому шагу (для подсказок «поменяй местами»)
+  const learned = s.final ? range(2,MAX) : range(2, stage);
   const queue = makeQuestions(tables, count);
   const total = count;
-  let solved = 0, mistakes = 0, wrongList = [], input = '', locked = false, firstTry = true;
-  const praise = ['Молодец! 🎉','Верно! 👍','Супер! ⭐','Отлично! 💪','Так держать! 🚀','Правильно! ✅'];
+  let solved = 0, mistakes = 0, wrongList = [], input = '', locked = false, firstTry = true, combo = 0, hintShown = false;
+  const praise = ['Молодец! 🎉','Верно! 👍','Супер! ⭐','Отлично! 💪','Так держать! 🚀','Правильно! ✅','Ух ты! 🤩','Гений! 🧠'];
 
   function draw(){
     const q = queue[0];
-    h(`${topBar(stepTitle(steps[i]))}
+    hintShown = false;
+    h(`${topBar(stepTitle(s))}
     <div class="card">
-      <div class="hud"><span>${solved}/${total}</span><div class="progress"><i style="width:${solved/total*100}%"></i></div><span>❌ ${mistakes}</span></div>
-      <div class="q">${q.a} × ${q.b}</div>
+      <div class="road"><span class="runner" id="runner" style="left:${8+solved/total*80}%">${f.e}</span><span class="goal">${s.final?'🏆':'🎁'}</span></div>
+      <div class="hud"><span>${solved}/${total}</span><span class="combo" id="combo">${combo>=2?'🔥 '+combo+' подряд!':''}</span><span>❌ ${mistakes}</span></div>
+      <div class="q" id="q">${q.a} × ${q.b}</div>
       <div class="answer" id="ans">${input||'&nbsp;'}</div>
       <div class="feedback" id="fb">&nbsp;</div>
+      <div id="hintArea"><button class="hint-btn" id="hintBtn">💡 Подсказка</button></div>
       <div class="pad">
         ${[1,2,3,4,5,6,7,8,9].map(d=>`<button data-d="${d}">${d}</button>`).join('')}
         <button class="del" data-d="del">⌫</button><button data-d="0">0</button><button class="go" data-d="ok">✔</button>
@@ -305,6 +499,11 @@ function trainer(i, tables, count){
     </div>`);
     bindBack();
     app.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>press(b.dataset.d));
+    document.getElementById('hintBtn').onclick=showHint;
+  }
+  function showHint(){
+    const q = queue[0]; hintShown = true;
+    document.getElementById('hintArea').innerHTML = `<div class="hintbox">${hintFor(q.a, q.b, learned)}</div>`;
   }
   function setAns(cls){ const el=document.getElementById('ans'); el.className='answer '+(cls||''); el.innerHTML=input||'&nbsp;'; }
   function press(d){
@@ -318,14 +517,23 @@ function trainer(i, tables, count){
     const q = queue[0], right = q.a*q.b, fb = document.getElementById('fb');
     locked = true;
     if(+input===right){
-      setAns('ok'); fb.style.color='var(--ok)'; fb.textContent = praise[Math.floor(Math.random()*praise.length)];
-      queue.shift(); solved++; firstTry = true;
-      setTimeout(next, 650);
+      SND.ok(); setAns('ok'); fb.style.color='var(--ok)';
+      queue.shift(); solved++;
+      if(firstTry && !hintShown) combo++; else combo=0;
+      fb.textContent = combo>=3 && combo%3===0 ? `Серия ${combo}! Ты огонь! 🔥` : pick(praise);
+      floatText(firstTry?'+1 ⭐':'👍', document.getElementById('ans'));
+      if(combo>=3 && combo%3===0) confetti(25);
+      const run=document.getElementById('runner'); run.style.left=(8+solved/total*80)+'%'; run.classList.add('jump');
+      firstTry = true;
+      setTimeout(next, 750);
     } else {
+      SND.bad(); combo = 0;
       if(firstTry){ mistakes++; wrongList.push(q.a+' × '+q.b+' = '+right); }
       firstTry = false;
       setAns('bad'); document.getElementById('ans').classList.add('shake');
-      fb.style.color='var(--bad)'; fb.textContent = `Не совсем. ${q.a} × ${q.b} = ${right}. Напиши ещё раз!`;
+      document.getElementById('combo').textContent='';
+      fb.style.color='var(--bad)'; fb.textContent = `Ой! ${q.a} × ${q.b} = ${right}. Напиши ещё раз!`;
+      showHint();
       setTimeout(()=>{ input=''; setAns(); locked=false; }, 1400);
     }
   }
@@ -336,21 +544,26 @@ function trainer(i, tables, count){
   }
   function finish(){
     detachKeys();
-    const pass = mistakes <= (count>10 ? PASS_MISTAKES+1 : PASS_MISTAKES);
+    const limit = count>10 ? PASS_MISTAKES+1 : PASS_MISTAKES;
+    const pass = mistakes <= limit;
     const stars = mistakes===0 ? 3 : mistakes<=1 ? 2 : 1;
-    if(pass){ state.stars[i] = Math.max(state.stars[i]||0, stars); save(); }
+    const isLast = lastOfStage[stage]===i;
+    const newFriend = pass && isLast && state.stars[i]===undefined;
+    if(pass){ state.stars[i] = Math.max(state.stars[i]||0, stars); save(); SND.win(); confetti(newFriend?120:60); } else SND.bad();
     const nextI = i+1 < steps.length ? i+1 : -1;
     h(`${topBar('Результат')}
     <div class="card result">
-      <div class="stars">${pass ? starsText(stars) : '😕'}</div>
-      <h2>${pass ? (mistakes===0?'Без единой ошибки!':'Тренажёр пройден!') : 'Почти получилось!'}</h2>
-      <p class="muted">Ошибок: ${mistakes}. ${pass ? '' : 'Чтобы пройти, нужно ошибиться не больше '+(count>10?PASS_MISTAKES+1:PASS_MISTAKES)+' раз.'}</p>
+      <div class="stars">${pass ? Array.from(starsText(stars)).map((c,j)=>`<span style="animation-delay:${j*.25}s">${c}</span>`).join('') : f.e}</div>
+      <h2>${pass ? (mistakes===0?'Без единой ошибки! 🎉':'Тренажёр пройден!') : 'Почти получилось!'}</h2>
+      <p class="muted">Ошибок: ${mistakes}. ${pass ? '' : f.name+' ждёт тебя! Чтобы пройти, можно ошибиться не больше '+limit+' раз. Попробуй ещё!'}</p>
       ${wrongList.length?`<p style="margin-bottom:4px"><b>Повтори эти примеры:</b></p><div class="mistakes">${wrongList.map(w=>`<span>${w}</span>`).join('')}</div>`:''}
     </div>
+    ${newFriend ? `<div class="card result"><div class="newfriend">${f.e}</div>
+      <h2>${stage==='final' ? 'Ты — Чемпион умножения!' : 'Новый друг: '+f.name+'!'}</h2>
+      <p class="muted">${stage==='final' ? 'Вся таблица умножения покорена! 🏆' : 'Остров «'+f.island+'» пройден. '+f.name+' теперь в твоей коллекции.'}</p></div>` : ''}
     ${pass && nextI>=0 ? `<button class="big-btn" id="next">Дальше: ${stepTitle(steps[nextI])} →</button>` : ''}
-    ${pass && nextI<0 ? `<div class="card result"><h2>🏆 Ура! Вся таблица умножения выучена!</h2></div>` : ''}
     <button class="big-btn ${pass?'ghost':''}" id="again">🔄 Ещё раз</button>
-    <button class="big-btn ghost" id="map">🗺 К списку шагов</button>`);
+    <button class="big-btn ghost" id="map">🗺 К карте островов</button>`);
     bindBack();
     const n = document.getElementById('next'); if(n) n.onclick=()=>openStep(nextI);
     document.getElementById('again').onclick=()=>openStep(i);
