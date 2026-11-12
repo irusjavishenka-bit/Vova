@@ -1,26 +1,29 @@
 <!doctype html>
-<html lang="ru">
+<html lang="uk">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>English Easy — учим английский</title>
+  <title>English Easy</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="topbar">
     <button class="logo" data-go="home">🇬🇧 English Easy</button>
     <div class="stats">
-      <span title="Изучено слов">📚 <b id="stat-learned">0</b></span>
-      <span title="Очки опыта">⭐ <b id="stat-xp">0</b></span>
-      <span title="Дней подряд">🔥 <b id="stat-streak">0</b></span>
+      <span>📚 <b id="stat-learned">0</b></span>
+      <span>⭐ <b id="stat-xp">0</b></span>
+      <span>🔥 <b id="stat-streak">0</b></span>
+      <button class="lang-btn" id="lang-btn" type="button">UA → RU</button>
     </div>
   </header>
 
   <div id="voice-warn" class="voice-warn" hidden>
-    🔇 На этом устройстве не найден английский голос, поэтому слова могут не озвучиваться.
-    Установи его в настройках: <b>Android</b> — «Настройки → Спец. возможности → Синтез речи»,
-    <b>iPhone</b> — «Настройки → Универсальный доступ → Устный контент → Голоса → English».
-    Лучше всего озвучка работает в Chrome, Edge и Safari.
+    <span data-lang="uk">🔇 На цьому пристрої не знайдено англійського голосу, тому слова можуть не озвучуватися.
+    Відкрий застосунок у <b>Chrome</b>. Якщо не допоможе — встанови голос: <b>Android</b> — «Налаштування → Синтез мовлення → Google → English»,
+    <b>iPhone</b> — «Параметри → Доступність → Усний контент → Голоси → English».</span>
+    <span data-lang="ru">🔇 На этом устройстве не найден английский голос, поэтому слова могут не озвучиваться.
+    Открой приложение в <b>Chrome</b>. Если не поможет — установи голос: <b>Android</b> — «Настройки → Синтез речи → Google → English»,
+    <b>iPhone</b> — «Настройки → Универсальный доступ → Устный контент → Голоса → English».</span>
   </div>
 
   <main id="app"></main>
@@ -30,6 +33,10 @@
   <script src="data.js"></script>
   <script src="stories.js"></script>
   <script src="alphabet.js"></script>
+  <script src="uk_dict.js"></script>
+  <script src="uk_stories.js"></script>
+  <script src="uk_data.js"></script>
+  <script src="pron.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

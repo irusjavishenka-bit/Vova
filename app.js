@@ -20,6 +20,75 @@ function loadProgress() {
 
 let progress = loadProgress();
 
+// ---------- Язык интерфейса: украинский (по умолчанию) или русский ----------
+let LANG = progress.settings.lang === "ru" ? "ru" : "uk";
+function L(ru, uk) { return LANG === "ru" ? ru : uk; }
+
+// Русские оригиналы данных, чтобы можно было переключаться туда и обратно
+const ORIGINAL = JSON.parse(JSON.stringify({ TOPICS, GRAMMAR, ALPHABET, PHONICS, STORIES, COMMON_DICT }));
+
+function trWord(v) {
+  if (LANG === "ru") return v;
+  if (typeof v === "string") return UK_TR[v] || v;
+  return [v[0], UK_TR[v[1]] || v[1], v[2] ? (UK_NOTES[v[2]] || v[2]) : v[2]];
+}
+
+function applyLang() {
+  const O = JSON.parse(JSON.stringify(ORIGINAL));
+  const uk = LANG === "uk";
+  for (const k in TOPICS) {
+    TOPICS[k].title = uk ? UK_TOPICS[k].title : O.TOPICS[k].title;
+    TOPICS[k].words.forEach((w, i) => { w[1] = uk ? UK_TOPICS[k].words[i] : O.TOPICS[k].words[i][1]; });
+  }
+  GRAMMAR.forEach((g, i) => {
+    g.title = uk ? UK_GRAMMAR[i].title : O.GRAMMAR[i].title;
+    g.theory = uk ? UK_GRAMMAR[i].theory : O.GRAMMAR[i].theory;
+  });
+  ALPHABET.forEach((a, i) => {
+    const o = O.ALPHABET[i];
+    a[1] = uk ? ukReading(o[1]) : o[1];
+    a[2] = uk ? UK_ALPHABET[o[0]][0] : o[2];
+    a[5] = uk ? UK_ALPHABET[o[0]][1] : o[5];
+  });
+  PHONICS.forEach((p, i) => {
+    const o = O.PHONICS[i];
+    p[1] = uk ? UK_PHONICS[o[0]][0] : o[1];
+    p[4] = uk ? UK_PHONICS[o[0]][1] : o[4];
+  });
+  for (const k in COMMON_DICT) COMMON_DICT[k] = trWord(O.COMMON_DICT[k]);
+  STORIES.forEach((s, i) => {
+    const o = O.STORIES[i];
+    const u = STORIES_UK[s.id];
+    s.ru = uk && u ? u.ru : o.ru;
+    s.rule = uk && u ? u.rule : o.rule;
+    s.text = o.text.map(([en, ru], k) => [en, uk && u ? u.text[k] : ru]);
+    for (const w in o.dict) s.dict[w] = trWord(o.dict[w]);
+    s.exercises = o.exercises.map(([q, opts, ans]) => {
+      if (uk) for (const h in UK_EXERCISE_HINTS) q = q.replace(h, UK_EXERCISE_HINTS[h]);
+      return [q, opts, ans];
+    });
+  });
+  document.documentElement.lang = LANG;
+  const btn = document.getElementById("lang-btn");
+  if (btn) btn.textContent = LANG === "uk" ? "UA → RU" : "RU → UA";
+}
+
+function setLang(lang) {
+  LANG = lang;
+  progress.settings.lang = lang;
+  save();
+  applyLang();
+  render();
+}
+
+// Как читается слово: [кэт] / [кет]
+function readingOf(word) {
+  const r = READ[String(word).toLowerCase().replace(/^to /, "")];
+  if (!r) return "";
+  return LANG === "uk" ? ukReading(r) : r;
+}
+function emojiOf(word) { return EMOJI[String(word).toLowerCase().replace(/^to /, "")] || ""; }
+
 function save() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch (e) { /* ignore */ }
   updateStats();
@@ -136,7 +205,21 @@ function topicWords() {
 function savedList(storyId) {
   return Object.values(progress.saved)
     .filter(s => storyId === undefined || s.story === storyId)
-    .map(s => [s.en, s.ru, s.ex]);
+    .map(s => [s.en, savedTranslation(s), s.ex]);
+}
+
+// Перевод сохранённого слова на текущем языке (ищем его в словаре рассказа)
+function savedTranslation(s) {
+  const idx = STORIES.findIndex(st => st.id === s.story);
+  if (idx >= 0) {
+    const byForm = s.w ? lookup(idx, s.w) : null;
+    if (byForm) return byForm.ru;
+    const dict = { ...COMMON_DICT, ...STORIES[idx].dict };
+    for (const [k, v] of Object.entries(dict)) {
+      if ((Array.isArray(v) ? v[0].toLowerCase() : k) === s.en.toLowerCase()) return Array.isArray(v) ? v[1] : v;
+    }
+  }
+  return s.ru;
 }
 
 // Все слова, которые встречаются в приложении (для вариантов ответа и повторения)
@@ -145,19 +228,19 @@ function allWords() {
   return [...topicWords(), ...savedList()].filter(w => !seen.has(w[0]) && seen.add(w[0]));
 }
 
-function backBtn(target, label = "← Назад") {
+function backBtn(target, label = L("← Назад", "← Назад")) {
   return `<button class="back" data-go="${target}">${label}</button>`;
 }
 
 // Набор слов для игр: тема, рассказ (s0, s1, ...), «мои слова» или повторение
 function getSet(arg) {
   if (TOPICS[arg]) return { words: TOPICS[arg].words, title: TOPICS[arg].title, backTo: "topic:" + arg };
-  if (arg === "my") return { words: savedList(), title: "Мои слова", backTo: "mywords" };
+  if (arg === "my") return { words: savedList(), title: L("Мои слова", "Мої слова"), backTo: "mywords" };
   if (arg === "abc") {
-    return { words: ALPHABET.map(([L, , , word, , ru]) => [word, ru, `${L} — ${word}`]), title: "Азбука", backTo: "abc" };
+    return { words: ALPHABET.map(([Lt, , , word, , ru]) => [word, ru, `${Lt} — ${word}`]), title: L("Азбука", "Абетка"), backTo: "abc" };
   }
   if (arg === "review") {
-    return { words: allWords().filter(w => progress.words[w[0]] !== undefined && !isLearned(w[0])), title: "Повторение", backTo: "home" };
+    return { words: allWords().filter(w => progress.words[w[0]] !== undefined && !isLearned(w[0])), title: L("Повторение", "Повторення"), backTo: "home" };
   }
   const m = /^s(\d+)$/.exec(arg || "");
   if (m && STORIES[m[1]]) {
@@ -171,25 +254,25 @@ function emptySet(set) {
     ${backBtn(set ? set.backTo : "home")}
     <div class="card result">
       <div class="big">📭</div>
-      <h1>Здесь пока нет слов</h1>
-      <p class="muted">Читай рассказы и нажимай на незнакомые слова — они появятся здесь.</p>
-      <button class="btn primary" data-go="home">На главную</button>
+      <h1>${L("Здесь пока нет слов", "Тут поки немає слів")}</h1>
+      <p class="muted">${L("Читай рассказы и нажимай на незнакомые слова — они появятся здесь.", "Читай оповідання і натискай на незнайомі слова — вони з'являться тут.")}</p>
+      <button class="btn primary" data-go="home">${L("На главную", "На головну")}</button>
     </div>`;
 }
 
 // Плитки игр для набора слов
 function gameTiles(arg, count) {
   const games = [
-    ["cards", "🃏", "Карточки", "Смотри и запоминай", 1],
-    ["quiz", "✅", "Тест", "Выбери перевод", 1],
-    ["typing", "⌨️", "Написание", "Напиши по-английски", 1],
-    ["pairs", "🔗", "Пары", "Соедини слово и перевод", 2],
-    ["listen", "🎧", "На слух", "Услышь и выбери", 1],
-    ["blitz", "⚡", "На скорость", progress.best[arg] ? `Рекорд: ${progress.best[arg]}` : "60 секунд, 3 жизни", 1],
+    ["cards", "🃏", L("Карточки", "Картки"), L("Смотри и запоминай", "Дивись і запам'ятовуй"), 1],
+    ["quiz", "✅", L("Тест", "Тест"), L("Выбери перевод", "Обери переклад"), 1],
+    ["typing", "⌨️", L("Написание", "Написання"), L("Напиши по-английски", "Напиши англійською"), 1],
+    ["pairs", "🔗", L("Пары", "Пари"), L("Соедини слово и перевод", "З'єднай слово і переклад"), 2],
+    ["listen", "🎧", L("На слух", "На слух"), L("Услышь и выбери", "Почуй і обери"), 1],
+    ["blitz", "⚡", L("На скорость", "На швидкість"), progress.best[arg] ? `${L("Рекорд", "Рекорд")}: ${progress.best[arg]}` : L("60 секунд, 3 жизни", "60 секунд, 3 життя"), 1],
   ];
   return `<div class="modes">${games.map(([mode, icon, name, sub, min]) => `
     <button class="tile" data-go="${mode}:${arg}" ${count < min ? "disabled" : ""}>
-      <div class="icon">${icon}</div><div class="name">${name}</div><div class="sub">${count < min ? `Нужно слов: ${min}` : sub}</div>
+      <div class="icon">${icon}</div><div class="name">${name}</div><div class="sub">${count < min ? `${L("Нужно слов", "Потрібно слів")}: ${min}` : sub}</div>
     </button>`).join("")}</div>`;
 }
 
@@ -199,12 +282,12 @@ function resultScreen(correct, total, again, backTo, extra = "") {
   app.innerHTML = `
     <div class="card result">
       <div class="big">${emoji}</div>
-      <h1>${correct} из ${total}</h1>
-      <p class="muted">${pct >= 70 ? "Отличная работа!" : "Продолжай тренироваться — всё получится!"}</p>
+      <h1>${correct} ${L("из", "з")} ${total}</h1>
+      <p class="muted">${pct >= 70 ? L("Отличная работа!", "Чудова робота!") : L("Продолжай тренироваться — всё получится!", "Продовжуй тренуватися — все вийде!")}</p>
       ${extra}
       <div class="row" style="justify-content:center">
-        <button class="btn primary" id="again">Ещё раз</button>
-        <button class="btn" data-go="${backTo}">Назад</button>
+        <button class="btn primary" id="again">${L("Ещё раз", "Ще раз")}</button>
+        <button class="btn" data-go="${backTo}">${L("Назад", "Назад")}</button>
       </div>
     </div>`;
   document.getElementById("again").onclick = again;
@@ -217,14 +300,15 @@ function storyUnlocked(i) { return i === 0 || isDone(i - 1); }
 function doneCount() { return STORIES.filter((_, i) => isDone(i)).length; }
 function nextStoryIndex() { const i = STORIES.findIndex((_, k) => !isDone(k)); return i; }
 
-const LEVEL_NAMES = {
-  A1: "Начальный — самые первые шаги",
-  A2: "Элементарный",
-  B1: "Средний",
-  B2: "Выше среднего",
-  C1: "Продвинутый",
-  C2: "Свободное владение — финиш 🏁",
+const LEVEL_NAMES_ALL = {
+  A1: ["Начальный — самые первые шаги", "Початковий — найперші кроки"],
+  A2: ["Элементарный", "Елементарний"],
+  B1: ["Средний", "Середній"],
+  B2: ["Выше среднего", "Вище середнього"],
+  C1: ["Продвинутый", "Просунутий"],
+  C2: ["Свободное владение — финиш 🏁", "Вільне володіння — фініш 🏁"],
 };
+const LEVEL_NAMES = new Proxy({}, { get: (_, code) => LEVEL_NAMES_ALL[code] ? L(...LEVEL_NAMES_ALL[code]) : "" });
 
 // Группируем рассказы по уровню (A1 … C2) в порядке сложности
 function storyLevels() {
@@ -245,8 +329,8 @@ function journeyCard() {
   return `
     <div class="card journey">
       <div class="row" style="justify-content:space-between">
-        <b>🗺 Путь от A1 до C2</b>
-        <span class="muted">${done} из ${total} рассказов</span>
+        <b>${L("🗺 Путь от A1 до C2", "🗺 Шлях від A1 до C2")}</b>
+        <span class="muted">${done} ${L("из", "з")} ${total} ${L("рассказов", "оповідань")}</span>
       </div>
       <div class="progress big-progress"><div style="width:${(done / total) * 100}%"></div></div>
       <div class="path">
@@ -256,11 +340,11 @@ function journeyCard() {
           return `<div class="step ${state}"><span>${state === "done" ? "✅" : esc(code)}</span><small>${d}/${items.length}</small></div>`;
         }).join('<div class="step-line"></div>')}
         <div class="step-line"></div>
-        <div class="step ${done === total ? "done" : ""}"><span>🏁</span><small>финиш</small></div>
+        <div class="step ${done === total ? "done" : ""}"><span>🏁</span><small>${L("финиш", "фініш")}</small></div>
       </div>
       ${next >= 0
-        ? `<button class="btn primary" data-go="story:${next}" style="margin-top:12px">▶ Продолжить: ${esc(STORIES[next].title)} (${esc(STORIES[next].level)})</button>`
-        : `<button class="btn primary" data-go="finish" style="margin-top:12px">🏆 Мой сертификат</button>`}
+        ? `<button class="btn primary" data-go="story:${next}" style="margin-top:12px">▶ ${L("Продолжить", "Продовжити")}: ${esc(STORIES[next].title)} (${esc(STORIES[next].level)})</button>`
+        : `<button class="btn primary" data-go="finish" style="margin-top:12px">${L("🏆 Мой сертификат", "🏆 Мій сертифікат")}</button>`}
     </div>`;
 }
 
@@ -268,29 +352,29 @@ function renderHome() {
   const review = getSet("review").words;
   const myCount = Object.keys(progress.saved).length;
   app.innerHTML = `
-    <h1>Учим английский 🚀</h1>
-    <p class="muted">Читай рассказы, учи слова по темам и играй, чтобы их запомнить.</p>
+    <h1>${L("Учим английский 🚀", "Вчимо англійську 🚀")}</h1>
+    <p class="muted">${L("Читай рассказы, учи слова по темам и играй, чтобы их запомнить.", "Читай оповідання, вчи слова за темами і грай, щоб їх запам'ятати.")}</p>
 
     ${review.length ? `
       <div class="card row" style="justify-content:space-between;margin-top:16px">
-        <div><b>Повторение</b><div class="muted">Слов на повторение: ${review.length}</div></div>
-        <button class="btn primary" data-go="quiz:review">Повторить</button>
+        <div><b>${L("Повторение", "Повторення")}</b><div class="muted">${L("Слов на повторение", "Слів на повторення")}: ${review.length}</div></div>
+        <button class="btn primary" data-go="quiz:review">${L("Повторить", "Повторити")}</button>
       </div>` : ""}
 
-    <h2>🔤 Азбука — начни здесь</h2>
+    <h2>${L("🔤 Азбука — начни здесь", "🔤 Абетка — почни тут")}</h2>
     <button class="card abc-banner" data-go="abc">
       <span class="abc-letters">Aa Bb Cc</span>
-      <span><b>Буквы и звуки</b><br><span class="muted">26 букв, как они читаются, сочетания sh, ch, th… и игра «Первая буква»</span></span>
+      <span><b>${L("Буквы и звуки", "Літери і звуки")}</b><br><span class="muted">${L("26 букв, как они читаются, сочетания sh, ch, th… и игра «Первая буква»", "26 літер, як вони читаються, поєднання sh, ch, th… і гра «Перша літера»")}</span></span>
     </button>
 
-    <h2>📚 Чтение книги</h2>
-    <p class="muted" style="margin-top:-6px">Потихоньку, шаг за шагом: от самых простых рассказов (A1) до самых сложных (C2). К каждому есть правило.</p>
+    <h2>${L("📚 Чтение книги", "📚 Читання книжки")}</h2>
+    <p class="muted" style="margin-top:-6px">${L("Потихоньку, шаг за шагом: от самых простых рассказов (A1) до самых сложных (C2). К каждому есть правило.", "Потроху, крок за кроком: від найпростіших оповідань (A1) до найскладніших (C2). До кожного є правило.")}</p>
     ${journeyCard()}
     <div class="grid">
       <button class="tile" data-go="mywords">
         <div class="icon">⭐</div>
-        <div class="name">Мои слова</div>
-        <div class="sub">${myCount} слов из рассказов</div>
+        <div class="name">${L("Мои слова", "Мої слова")}</div>
+        <div class="sub">${myCount} ${L("слов из рассказов", "слів з оповідань")}</div>
       </button>
     </div>
     ${storyLevels().map(([code, items]) => `
@@ -301,14 +385,14 @@ function renderHome() {
           const open = storyUnlocked(i);
           return `
             <button class="tile ${open ? "" : "locked"}" data-go="${open ? "story:" + i : ""}" ${open ? "" : "disabled"}>
-              <div class="sub">${open ? (isDone(i) ? "✅ Прочитано" : "📖 Рассказ " + (i + 1)) : "🔒 Сначала прочитай предыдущий"}</div>
+              <div class="sub">${open ? (isDone(i) ? L("✅ Прочитано", "✅ Прочитано") : L("📖 Рассказ ", "📖 Оповідання ") + (i + 1)) : L("🔒 Сначала прочитай предыдущий", "🔒 Спочатку прочитай попереднє")}</div>
               <div class="name">${esc(s.title)}</div>
               <div class="sub">${esc(s.ru)}</div>
             </button>`;
         }).join("")}
       </div>`).join("")}
 
-    <h2>📖 Словарь по темам</h2>
+    <h2>${L("📖 Словарь по темам", "📖 Словник за темами")}</h2>
     <div class="grid">
       ${Object.entries(TOPICS).map(([key, t]) => {
         const p = t.words.filter(w => isLearned(w[0])).length / t.words.length;
@@ -316,28 +400,30 @@ function renderHome() {
           <button class="tile" data-go="topic:${key}">
             <div class="icon">${t.icon}</div>
             <div class="name">${esc(t.title)}</div>
-            <div class="sub">${t.words.length} слов · ${Math.round(p * 100)}%</div>
+            <div class="sub">${t.words.length} ${L("слов", "слів")} · ${Math.round(p * 100)}%</div>
             <div class="progress"><div style="width:${p * 100}%"></div></div>
           </button>`;
       }).join("")}
     </div>
 
-    <h2>✏️ Грамматика</h2>
+    <h2>${L("✏️ Грамматика", "✏️ Граматика")}</h2>
     <div class="grid">
       ${GRAMMAR.map((g, i) => `
         <button class="tile" data-go="grammar:${i}">
           <div class="name">${esc(g.title)}</div>
-          <div class="sub">${progress.grammar[i] !== undefined ? `Лучший результат: ${progress.grammar[i]}/${g.exercises.length}` : "Не пройдено"}</div>
+          <div class="sub">${progress.grammar[i] !== undefined ? `${L("Лучший результат", "Найкращий результат")}: ${progress.grammar[i]}/${g.exercises.length}` : L("Не пройдено", "Не пройдено")}</div>
         </button>`).join("")}
     </div>
 
-    <h2>⚙️ Настройки</h2>
+    <h2>${L("⚙️ Настройки", "⚙️ Налаштування")}</h2>
     <div class="row">
-      <button class="btn" id="slow-toggle">${progress.settings.slow ? "🐢 Медленная озвучка: включена" : "🔊 Обычная скорость озвучки"}</button>
-      <button class="btn" data-say="Hello! Let's learn English together.">▶ Проверить голос</button>
-      <button class="btn" id="reset">Сбросить прогресс</button>
+      <button class="btn" id="slow-toggle">${progress.settings.slow ? L("🐢 Медленная озвучка: включена", "🐢 Повільне озвучення: увімкнено") : L("🔊 Обычная скорость озвучки", "🔊 Звичайна швидкість озвучення")}</button>
+      <button class="btn" id="lang-toggle">${L("🌐 Язык: русский → українська", "🌐 Мова: українська → русский")}</button>
+      <button class="btn" data-say="Hello! Let's learn English together.">${L("▶ Проверить голос", "▶ Перевірити голос")}</button>
+      <button class="btn" id="reset">${L("Сбросить прогресс", "Скинути прогрес")}</button>
     </div>
   `;
+  document.getElementById("lang-toggle").onclick = () => setLang(LANG === "uk" ? "ru" : "uk");
   document.getElementById("slow-toggle").onclick = () => {
     progress.settings.slow = !progress.settings.slow;
     save();
@@ -349,12 +435,12 @@ function renderHome() {
   resetBtn.onclick = () => {
     if (!armed) {
       armed = true;
-      resetBtn.textContent = "Точно сбросить? Нажми ещё раз";
+      resetBtn.textContent = L("Точно сбросить? Нажми ещё раз", "Точно скинути? Натисни ще раз");
       resetBtn.classList.add("danger");
       setTimeout(() => {
         if (!resetBtn.isConnected) return;
         armed = false;
-        resetBtn.textContent = "Сбросить прогресс";
+        resetBtn.textContent = L("Сбросить прогресс", "Скинути прогрес");
         resetBtn.classList.remove("danger");
       }, 4000);
       return;
@@ -370,9 +456,9 @@ function renderTopic(key) {
   app.innerHTML = `
     ${backBtn("home")}
     <h1>${t.icon} ${esc(t.title)}</h1>
-    <p class="muted">Выучено ${t.words.filter(w => isLearned(w[0])).length} из ${t.words.length}</p>
+    <p class="muted">${L("Выучено", "Вивчено")} ${t.words.filter(w => isLearned(w[0])).length} ${L("из", "з")} ${t.words.length}</p>
     ${gameTiles(key, t.words.length)}
-    <h2>Список слов</h2>
+    <h2>${L("Список слов", "Список слів")}</h2>
     <div class="card">${wordList(t.words, false)}</div>`;
 }
 
@@ -380,10 +466,10 @@ function wordList(words, removable) {
   return `<ul class="wordlist">
     ${words.map(([en, ru]) => `
       <li>
-        <span><span class="en">${esc(en)}</span> — ${esc(ru)} ${isLearned(en) ? '<span class="badge">выучено</span>' : ""}</span>
+        <span>${emojiOf(en)} <span class="en">${esc(en)}</span>${readingOf(en) ? ` <span class="reading-sm">[${esc(readingOf(en))}]</span>` : ""} — ${esc(ru)} ${isLearned(en) ? `<span class="badge">${L("выучено", "вивчено")}</span>` : ""}</span>
         <span class="row" style="flex-wrap:nowrap">
-          <button class="speak" data-say="${esc(en)}" title="Произнести">🔊</button>
-          ${removable ? `<button class="speak" data-unsave="${esc(en)}" title="Убрать из моих слов">✕</button>` : ""}
+          <button class="speak" data-say="${esc(en)}" title="${L("Произнести", "Вимовити")}">🔊</button>
+          ${removable ? `<button class="speak" data-unsave="${esc(en)}" title="${L("Убрать из моих слов", "Прибрати з моїх слів")}">✕</button>` : ""}
         </span>
       </li>`).join("")}
   </ul>`;
@@ -417,39 +503,39 @@ function renderStory(i) {
   currentStory = i;
   app.innerHTML = `
     ${backBtn("home")}
-    <div class="counter"><span class="level-code">${esc(s.level)}</span> Рассказ ${i + 1} из ${STORIES.length} · ${esc(LEVEL_NAMES[s.level] || "")}</div>
+    <div class="counter"><span class="level-code">${esc(s.level)}</span> ${L("Рассказ", "Оповідання")} ${i + 1} ${L("из", "з")} ${STORIES.length} · ${esc(LEVEL_NAMES[s.level] || "")}</div>
     <h1>${wrapWords(s.title)}</h1>
     <p class="muted" style="margin-top:0">${esc(s.ru)}</p>
 
     <details class="card rule" ${isDone(i) ? "" : "open"}>
-      <summary>📘 Правило: ${esc(s.rule.title)}</summary>
+      <summary>📘 ${L("Правило", "Правило")}: ${esc(s.rule.title)}</summary>
       <div class="theory">${s.rule.html}</div>
     </details>
 
-    <p class="hint" style="text-align:left">👆 Нажми на любое слово, чтобы увидеть перевод. Слово сохранится в «Мои слова» для тренировки.</p>
+    <p class="hint" style="text-align:left">${L("👆 Нажми на любое слово, чтобы увидеть перевод. Слово сохранится в «Мои слова» для тренировки.", "👆 Натисни на будь-яке слово, щоб побачити переклад. Слово збережеться в «Мої слова» для тренування.")}</p>
     <div class="row">
-      <button class="btn primary" id="read-all">▶ Слушать весь текст</button>
-      <button class="btn" id="slow">${progress.settings.slow ? "🐢 Медленно" : "🔊 Обычная скорость"}</button>
-      <button class="btn" id="toggle-tr">🇷🇺 Показать перевод</button>
+      <button class="btn primary" id="read-all">${L("▶ Слушать весь текст", "▶ Слухати весь текст")}</button>
+      <button class="btn" id="slow">${progress.settings.slow ? L("🐢 Медленно", "🐢 Повільно") : L("🔊 Обычная скорость", "🔊 Звичайна швидкість")}</button>
+      <button class="btn" id="toggle-tr">${L("🇷🇺 Показать перевод", "🇺🇦 Показати переклад")}</button>
     </div>
 
     <div class="card book" id="book">
       ${s.text.map(([en, ru], k) => `
         <div class="sentence">
           <div class="en-line">
-            <button class="play-btn" data-k="${k}" title="Прослушать предложение">▶</button>
+            <button class="play-btn" data-k="${k}" title="${L("Прослушать предложение", "Прослухати речення")}">▶</button>
             ${wrapWords(en)}
-            <button class="tr-btn" data-k="${k}" title="Перевод предложения">↔</button>
+            <button class="tr-btn" data-k="${k}" title="${L("Перевод предложения", "Переклад речення")}">↔</button>
           </div>
           <div class="ru-line" id="tr-${k}" hidden>${esc(ru)}</div>
         </div>`).join("")}
     </div>
 
-    <h2>⭐ Слова из этого рассказа</h2>
+    <h2>${L("⭐ Слова из этого рассказа", "⭐ Слова з цього оповідання")}</h2>
     <div class="card" id="story-words"></div>
 
     <div style="margin-top:16px">
-      <button class="btn primary" data-go="story-done:${i}">Я дочитал(а) → тренировать слова</button>
+      <button class="btn primary" data-go="story-done:${i}">${L("Я дочитал(а) → тренировать слова", "Я дочитав(ла) → тренувати слова")}</button>
     </div>`;
 
   refreshStoryWords();
@@ -461,12 +547,12 @@ function renderStory(i) {
   const stopReading = () => {
     reading = false;
     highlight(-1);
-    if (readBtn.isConnected) readBtn.textContent = "▶ Слушать весь текст";
+    if (readBtn.isConnected) readBtn.textContent = L("▶ Слушать весь текст", "▶ Слухати весь текст");
   };
   readBtn.onclick = () => {
     if (reading) { speechSynthesis.cancel(); return stopReading(); }
     reading = true;
-    readBtn.textContent = "⏹ Остановить";
+    readBtn.textContent = L("⏹ Остановить", "⏹ Зупинити");
     speakSentences(s.text.map(t => t[0]), k => {
       highlight(k);
       sentences[k].scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -476,20 +562,20 @@ function renderStory(i) {
     b.onclick = e => {
       e.stopPropagation();
       reading = false;
-      readBtn.textContent = "▶ Слушать весь текст";
+      readBtn.textContent = L("▶ Слушать весь текст", "▶ Слухати весь текст");
       speakSentences([s.text[b.dataset.k][0]], () => highlight(Number(b.dataset.k)), () => highlight(-1));
     };
   });
   document.getElementById("slow").onclick = e => {
     progress.settings.slow = !progress.settings.slow;
     save();
-    e.target.textContent = progress.settings.slow ? "🐢 Медленно" : "🔊 Обычная скорость";
+    e.target.textContent = progress.settings.slow ? L("🐢 Медленно", "🐢 Повільно") : L("🔊 Обычная скорость", "🔊 Звичайна швидкість");
   };
   let shown = false;
   document.getElementById("toggle-tr").onclick = e => {
     shown = !shown;
     app.querySelectorAll(".ru-line").forEach(el => { el.hidden = !shown; });
-    e.target.textContent = shown ? "🇷🇺 Скрыть перевод" : "🇷🇺 Показать перевод";
+    e.target.textContent = shown ? L("🇷🇺 Скрыть перевод", "🇺🇦 Сховати переклад") : L("🇷🇺 Показать перевод", "🇺🇦 Показати переклад");
   };
   app.querySelectorAll(".tr-btn").forEach(b => {
     b.onclick = e => {
@@ -512,7 +598,7 @@ function refreshStoryWords() {
     const words = savedList(STORIES[currentStory].id);
     box.innerHTML = words.length
       ? wordList(words, true)
-      : `<p class="muted" style="margin:0">Пока пусто. Нажимай на незнакомые слова в тексте.</p>`;
+      : `<p class="muted" style="margin:0">${L("Пока пусто. Нажимай на незнакомые слова в тексте.", "Поки порожньо. Натискай на незнайомі слова в тексті.")}</p>`;
   }
   // Подсвечиваем в тексте слова, которые уже сохранены
   app.querySelectorAll(".w").forEach(el => {
@@ -530,29 +616,30 @@ function openSheet(word) {
   const isSaved = () => !!progress.saved[info.base];
   // Нажал на слово — значит не знает: сразу добавляем в «Мои слова»
   if (!isSaved()) {
-    progress.saved[info.base] = { en: info.base, ru: info.ru, ex: sentenceWith(currentStory, info.word), story: STORIES[currentStory].id };
+    progress.saved[info.base] = { en: info.base, w: info.word, ru: info.ru, ex: sentenceWith(currentStory, info.word), story: STORIES[currentStory].id };
     touchStreak();
     save();
   }
   const draw = () => {
     sheet.innerHTML = `
-      <button class="sheet-close" id="sheet-close" aria-label="Закрыть">✕</button>
-      <div class="sheet-word">${esc(info.word)}</div>
+      <button class="sheet-close" id="sheet-close" aria-label="${L("Закрыть", "Закрити")}">✕</button>
+      <div class="sheet-word">${esc(info.word)} ${emojiOf(info.base)}</div>
+      ${readingOf(info.word) || readingOf(info.base) ? `<div class="reading">[${esc(readingOf(info.word) || readingOf(info.base))}]</div>` : ""}
       <div class="row" style="margin:6px 0">
-        <button class="btn" data-say="${esc(info.word)}">🔊 Послушать</button>
-        <button class="btn" data-say-slow="${esc(info.word)}">🐢 Медленно</button>
+        <button class="btn" data-say="${esc(info.word)}">${L("🔊 Послушать", "🔊 Послухати")}</button>
+        <button class="btn" data-say-slow="${esc(info.word)}">${L("🐢 Медленно", "🐢 Повільно")}</button>
         ${info.base !== info.word ? `<button class="btn" data-say="${esc(info.base)}">🔊 ${esc(info.base)}</button>` : ""}
       </div>
-      ${info.base !== info.word ? `<div class="muted">Начальная форма: <b>${esc(info.base)}</b></div>` : ""}
+      ${info.base !== info.word ? `<div class="muted">${L("Начальная форма", "Початкова форма")}: <b>${esc(info.base)}</b></div>` : ""}
       <div class="sheet-ru">${esc(info.ru)}</div>
       ${info.note ? `<div class="muted">💡 ${esc(info.note)}</div>` : ""}
       <button class="btn ${isSaved() ? "" : "primary"}" id="sheet-save" style="margin-top:12px">
-        ${isSaved() ? "✓ В моих словах (убрать)" : "⭐ Добавить в мои слова"}
+        ${isSaved() ? L("✓ В моих словах (убрать)", "✓ У моїх словах (прибрати)") : L("⭐ Добавить в мои слова", "⭐ Додати в мої слова")}
       </button>`;
     document.getElementById("sheet-close").onclick = closeSheet;
     document.getElementById("sheet-save").onclick = () => {
       if (isSaved()) delete progress.saved[info.base];
-      else progress.saved[info.base] = { en: info.base, ru: info.ru, ex: sentenceWith(currentStory, info.word), story: STORIES[currentStory].id };
+      else progress.saved[info.base] = { en: info.base, w: info.word, ru: info.ru, ex: sentenceWith(currentStory, info.word), story: STORIES[currentStory].id };
       save();
       draw();
       refreshStoryWords();
@@ -580,30 +667,30 @@ function renderStoryDone(i) {
   const next = STORIES[i + 1];
   const levelDone = next && next.level !== s.level;
   app.innerHTML = `
-    ${backBtn("story:" + i, "← К тексту")}
+    ${backBtn("story:" + i, L("← К тексту", "← До тексту"))}
     <div class="card result">
       <div class="big">📖🎉</div>
-      <h1>Рассказ «${esc(s.title)}» прочитан!</h1>
-      ${first ? `<p class="muted">+50 ⭐ ${next ? "· Открыт следующий рассказ" : ""}</p>` : ""}
-      ${levelDone ? `<p class="level-up">🎊 Уровень ${esc(s.level)} пройден! Дальше — ${esc(next.level)}: ${esc(LEVEL_NAMES[next.level] || "")}</p>` : ""}
-      <p class="muted">Пройдено ${doneCount()} из ${STORIES.length} рассказов до финиша 🏁</p>
+      <h1>${L("Рассказ", "Оповідання")} «${esc(s.title)}» ${L("прочитан!", "прочитано!")}</h1>
+      ${first ? `<p class="muted">+50 ⭐ ${next ? L("· Открыт следующий рассказ", "· Відкрито наступне оповідання") : ""}</p>` : ""}
+      ${levelDone ? `<p class="level-up">🎊 ${L("Уровень", "Рівень")} ${esc(s.level)} ${L("пройден! Дальше", "пройдено! Далі")} — ${esc(next.level)}: ${esc(LEVEL_NAMES[next.level] || "")}</p>` : ""}
+      <p class="muted">${L("Пройдено", "Пройдено")} ${doneCount()} ${L("из", "з")} ${STORIES.length} ${L("рассказов до финиша", "оповідань до фінішу")} 🏁</p>
     </div>
 
-    <h2>1. Закрепи правило</h2>
+    <h2>${L("1. Закрепи правило", "1. Закріпи правило")}</h2>
     <div class="card row" style="justify-content:space-between">
-      <div><b>${esc(s.rule.title)}</b><div class="muted">${s.exercises.length} задания</div></div>
-      <button class="btn primary" data-go="srule:${i}">Упражнения</button>
+      <div><b>${esc(s.rule.title)}</b><div class="muted">${s.exercises.length} ${L("задания", "завдання")}</div></div>
+      <button class="btn primary" data-go="srule:${i}">${L("Упражнения", "Вправи")}</button>
     </div>
 
-    <h2>2. Выучи новые слова (${words.length})</h2>
+    <h2>${L("2. Выучи новые слова", "2. Вивчи нові слова")} (${words.length})</h2>
     ${words.length
-      ? `<p class="muted" style="margin-top:-6px">Это слова, которые ты переводил. Поиграй, чтобы их запомнить!</p>${gameTiles("s" + i, words.length)}`
-      : `<div class="card"><p style="margin:0">Ты не открыл ни одного перевода — значит, знаешь все слова! 💪</p></div>`}
+      ? `<p class="muted" style="margin-top:-6px">${L("Это слова, которые ты переводил. Поиграй, чтобы их запомнить!", "Це слова, які ти перекладав(ла). Пограй, щоб їх запам'ятати!")}</p>${gameTiles("s" + i, words.length)}`
+      : `<div class="card"><p style="margin:0">${L("Ты не открыл ни одного перевода — значит, знаешь все слова! 💪", "Ти не відкрив(ла) жодного перекладу — отже, знаєш усі слова! 💪")}</p></div>`}
 
     <div class="row" style="margin-top:24px">
-      ${next ? `<button class="btn primary" data-go="story:${i + 1}">Следующий рассказ →</button>`
-        : doneCount() === STORIES.length ? `<button class="btn primary" data-go="finish">🏁 К финишу!</button>` : ""}
-      <button class="btn" data-go="home">На главную</button>
+      ${next ? `<button class="btn primary" data-go="story:${i + 1}">${L("Следующий рассказ →", "Наступне оповідання →")}</button>`
+        : doneCount() === STORIES.length ? `<button class="btn primary" data-go="finish">${L("🏁 К финишу!", "🏁 До фінішу!")}</button>` : ""}
+      <button class="btn" data-go="home">${L("На главную", "На головну")}</button>
     </div>`;
 }
 
@@ -611,16 +698,16 @@ function renderStoryDone(i) {
 function renderAbc() {
   app.innerHTML = `
     ${backBtn("home")}
-    <h1>🔤 Азбука</h1>
-    <p class="muted">Нажми на букву — услышишь, как она называется, и слово на эту букву.</p>
+    <h1>${L("🔤 Азбука", "🔤 Абетка")}</h1>
+    <p class="muted">${L("Нажми на букву — услышишь, как она называется, и слово на эту букву.", "Натисни на літеру — почуєш, як вона називається, і побачиш, як вона читається в різних словах.")}</p>
     <div class="row">
-      <button class="btn primary" data-go="abcgame">🎯 Игра «Первая буква»</button>
-      <button class="btn" id="abc-song">▶ Весь алфавит</button>
+      <button class="btn primary" data-go="abcgame">${L("🎯 Игра «Первая буква»", "🎯 Гра «Перша літера»")}</button>
+      <button class="btn" id="abc-song">${L("▶ Весь алфавит", "▶ Уся абетка")}</button>
     </div>
     <div class="abc-grid">
-      ${ALPHABET.map(([L, name, sound, word, emoji, ru]) => `
-        <button class="abc-card" data-letter="${L}">
-          <div class="abc-big">${L}${L.toLowerCase()}</div>
+      ${ALPHABET.map(([Lt, name, sound, word, emoji, ru]) => `
+        <button class="abc-card" data-letter="${Lt}">
+          <div class="abc-big">${Lt}${Lt.toLowerCase()}</div>
           <div class="abc-emoji">${emoji}</div>
           <div class="abc-word">${esc(word)}</div>
           <div class="muted abc-ru">${esc(ru)}</div>
@@ -629,8 +716,8 @@ function renderAbc() {
     </div>
     <div class="card" id="abc-info" hidden></div>
 
-    <h2>🧩 Фоника — как читаются сочетания букв</h2>
-    <p class="muted" style="margin-top:-6px">Некоторые буквы вместе читаются по-особому. Нажми и послушай.</p>
+    <h2>${L("🧩 Фоника — как читаются сочетания букв", "🧩 Фоніка — як читаються поєднання літер")}</h2>
+    <p class="muted" style="margin-top:-6px">${L("Некоторые буквы вместе читаются по-особому. Нажми и послушай.", "Деякі літери разом читаються по-особливому. Натисни і послухай.")}</p>
     <div class="abc-grid">
       ${PHONICS.map(([combo, sound, word, emoji, ru]) => `
         <button class="abc-card" data-say="${esc(word)}">
@@ -642,29 +729,39 @@ function renderAbc() {
         </button>`).join("")}
     </div>
 
-    <h2>🎮 Тренируй слова из азбуки</h2>
+    <h2>${L("🎮 Тренируй слова из азбуки", "🎮 Тренуй слова з абетки")}</h2>
     ${gameTiles("abc", ALPHABET.length)}`;
 
   app.querySelectorAll("[data-letter]").forEach(btn => {
     btn.onclick = () => {
-      const [L, name, sound, word, emoji, ru] = ALPHABET.find(a => a[0] === btn.dataset.letter);
+      const [Lt, name, sound, word, emoji, ru] = ALPHABET.find(a => a[0] === btn.dataset.letter);
       const info = document.getElementById("abc-info");
       info.hidden = false;
       info.innerHTML = `
         <div class="row" style="justify-content:space-between">
-          <div class="abc-big">${L}${L.toLowerCase()}</div>
+          <div class="abc-big">${Lt}${Lt.toLowerCase()}</div>
           <div class="abc-emoji">${emoji}</div>
         </div>
-        <p><b>Называется:</b> [${esc(name)}]<br><b>Звук в словах:</b> ${esc(sound)}</p>
-        <p><b>${esc(word)}</b> — ${esc(ru)}</p>
-        <div class="row">
-          <button class="btn" data-say="${L}">🔊 Буква</button>
-          <button class="btn" data-say="${esc(word)}">🔊 Слово</button>
-          <button class="btn" data-say-slow="${esc(word)}">🐢 Медленно</button>
+        <p><b>${L("Называется", "Називається")}:</b> [${esc(name)}] <button class="btn btn-sm" data-say="${Lt}">${L("🔊 Буква", "🔊 Літера")}</button></p>
+        <h3 class="letter-head">${L("Как читается буква", "Як читається літера")} ${Lt} ${L("в словах", "у словах")}:</h3>
+        <div class="letter-sounds">
+          ${(LETTER_SOUNDS[Lt] || []).map(([w, r, pic, sRu, sUk]) => `
+            <div class="ls-row">
+              <span class="ls-pic">${pic}</span>
+              <span class="ls-main">
+                <b class="ls-word">${highlightLetter(w, Lt)}</b>
+                <span class="reading-sm">[${esc(LANG === "uk" ? ukReading(r) : r)}]</span>
+                <span class="muted ls-note">${esc(L(sRu, sUk))}</span>
+              </span>
+              <span class="row" style="flex-wrap:nowrap;gap:4px">
+                <button class="speak" data-say="${esc(w)}" title="${L("Послушать", "Послухати")}">🔊</button>
+                <button class="speak" data-say-slow="${esc(w)}" title="${L("Медленно", "Повільно")}">🐢</button>
+              </span>
+            </div>`).join("")}
         </div>`;
       app.querySelectorAll(".abc-card.active").forEach(c => c.classList.remove("active"));
       btn.classList.add("active");
-      speakSentences([L + ".", word], () => {}, () => {});
+      speakSentences([Lt + "."], () => {}, () => {});
       info.scrollIntoView({ block: "nearest", behavior: "smooth" });
     };
   });
@@ -676,37 +773,42 @@ function renderAbc() {
   };
 }
 
+// Выделяет букву в слове: c<b>a</b>t
+function highlightLetter(word, letter) {
+  return esc(word).replace(new RegExp(letter, "gi"), m => `<span class="hl">${m}</span>`);
+}
+
 // Игра: услышь слово и выбери, с какой буквы оно начинается
 function renderAbcGame() {
   const rounds = shuffle(ALPHABET).slice(0, 10);
   let i = 0, correct = 0;
   function draw() {
-    const [L, , , word, emoji, ru] = rounds[i];
-    const options = shuffle([L, ...shuffle(ALPHABET.filter(a => a[0] !== L)).slice(0, 3).map(a => a[0])]);
+    const [Lt, , , word, emoji, ru] = rounds[i];
+    const options = shuffle([Lt, ...shuffle(ALPHABET.filter(a => a[0] !== Lt)).slice(0, 3).map(a => a[0])]);
     app.innerHTML = `
       ${backBtn("abc")}
-      <div class="counter">Слово ${i + 1} из ${rounds.length} · Верно: ${correct}</div>
+      <div class="counter">${L("Слово", "Слово")} ${i + 1} ${L("из", "з")} ${rounds.length} · ${L("Верно", "Правильно")}: ${correct}</div>
       <div class="question"><div class="abc-emoji" style="font-size:4rem">${emoji}</div>
-        <button class="btn primary" id="play">🔊 Послушать слово</button></div>
-      <p class="muted" style="text-align:center">С какой буквы начинается слово?</p>
+        <button class="btn primary" id="play">${L("🔊 Послушать слово", "🔊 Послухати слово")}</button></div>
+      <p class="muted" style="text-align:center">${L("С какой буквы начинается слово?", "З якої літери починається слово?")}</p>
       <div class="abc-options">${options.map(o => `<button class="option abc-option" data-val="${o}">${o}${o.toLowerCase()}</button>`).join("")}</div>
       <div class="feedback" id="fb"></div>
-      <button class="btn primary" id="next" style="display:none">Дальше →</button>`;
+      <button class="btn primary" id="next" style="display:none">${L("Дальше →", "Далі →")}</button>`;
     document.getElementById("play").onclick = () => speak(word);
     speak(word);
     app.querySelectorAll(".abc-option").forEach(btn => {
       btn.onclick = () => {
-        const ok = btn.dataset.val === L;
+        const ok = btn.dataset.val === Lt;
         app.querySelectorAll(".abc-option").forEach(b => {
           b.disabled = true;
-          if (b.dataset.val === L) b.classList.add("correct");
+          if (b.dataset.val === Lt) b.classList.add("correct");
         });
         if (!ok) btn.classList.add("wrong");
         if (ok) { correct++; progress.xp += 10; }
         touchStreak(); save();
         const fb = document.getElementById("fb");
         fb.className = "feedback " + (ok ? "good" : "bad");
-        fb.textContent = `${ok ? "Правильно! 🎉" : "Не совсем."} ${word} — ${ru}, начинается с буквы ${L}`;
+        fb.textContent = `${ok ? L("Правильно! 🎉", "Правильно! 🎉") : L("Не совсем.", "Не зовсім.")} ${word} — ${ru}, ${L("начинается с буквы", "починається з літери")} ${Lt}`;
         const next = document.getElementById("next");
         next.style.display = "inline-block";
         next.onclick = () => {
@@ -728,18 +830,18 @@ function renderFinish() {
     ${backBtn("home")}
     <div class="card certificate">
       <div class="big">🏆</div>
-      <div class="muted">СЕРТИФИКАТ</div>
-      <h1>Путь от A1 до C2 пройден!</h1>
-      <p class="cert-name">${name ? esc(name) : "Ваше имя"}</p>
-      <p>прочитал(а) все рассказы (${STORIES.length}), выучил(а) слов: ${learned}, набрал(а) ${progress.xp} ⭐</p>
+      <div class="muted">${L("СЕРТИФИКАТ", "СЕРТИФІКАТ")}</div>
+      <h1>${L("Путь от A1 до C2 пройден!", "Шлях від A1 до C2 пройдено!")}</h1>
+      <p class="cert-name">${name ? esc(name) : L("Ваше имя", "Ваше ім'я")}</p>
+      <p>${L("прочитал(а) все рассказы", "прочитав(ла) всі оповідання")} (${STORIES.length}), ${L("выучил(а) слов", "вивчив(ла) слів")}: ${learned}, ${L("набрал(а)", "набрав(ла)")} ${progress.xp} ⭐</p>
       <div class="cert-levels">${["A1", "A2", "B1", "B2", "C1", "C2"].map(l => `<span class="level-code">${l} ✓</span>`).join("")}</div>
       <p class="muted">${new Date().toLocaleDateString("ru-RU")}</p>
     </div>
     <div class="row no-print" style="margin-top:16px">
-      <input class="input" id="cert-name" placeholder="Впиши имя для сертификата" value="${esc(name)}" style="flex:1;min-width:200px">
-      <button class="btn primary" id="cert-save">Сохранить имя</button>
+      <input class="input" id="cert-name" placeholder="${L("Впиши имя для сертификата", "Впиши ім'я для сертифіката")}" value="${esc(name)}" style="flex:1;min-width:200px">
+      <button class="btn primary" id="cert-save">${L("Сохранить имя", "Зберегти ім'я")}</button>
     </div>
-    <p class="muted no-print">📸 Сделай снимок экрана, чтобы сохранить сертификат.</p>`;
+    <p class="muted no-print">${L("📸 Сделай снимок экрана, чтобы сохранить сертификат.", "📸 Зроби знімок екрана, щоб зберегти сертифікат.")}</p>`;
   document.getElementById("cert-save").onclick = () => {
     progress.settings.name = document.getElementById("cert-name").value.trim();
     save();
@@ -751,11 +853,11 @@ function renderMyWords() {
   const words = savedList();
   app.innerHTML = `
     ${backBtn("home")}
-    <h1>⭐ Мои слова</h1>
-    <p class="muted">Слова, которые ты переводил при чтении. Выучено ${words.filter(w => isLearned(w[0])).length} из ${words.length}.</p>
+    <h1>⭐ ${L("Мои слова", "Мої слова")}</h1>
+    <p class="muted">${L("Слова, которые ты переводил при чтении. Выучено", "Слова, які ти перекладав(ла) під час читання. Вивчено")} ${words.filter(w => isLearned(w[0])).length} ${L("из", "з")} ${words.length}.</p>
     ${gameTiles("my", words.length)}
-    <h2>Список</h2>
-    <div class="card" id="my-list">${words.length ? wordList(words, true) : '<p class="muted" style="margin:0">Пока пусто. Открой рассказ и нажимай на незнакомые слова.</p>'}</div>`;
+    <h2>${L("Список", "Список")}</h2>
+    <div class="card" id="my-list">${words.length ? wordList(words, true) : `<p class="muted" style="margin:0">${L("Пока пусто. Открой рассказ и нажимай на незнакомые слова.", "Поки порожньо. Відкрий оповідання і натискай на незнайомі слова.")}</p>`}</div>`;
 }
 
 // ---------- Игры ----------
@@ -770,18 +872,24 @@ function renderCards(arg) {
     app.innerHTML = `
       ${backBtn(set.backTo)}
       <div class="row" style="justify-content:space-between">
-        <span class="counter">Карточка ${i + 1} из ${words.length}</span>
+        <span class="counter">${L("Карточка", "Картка")} ${i + 1} ${L("из", "з")} ${words.length}</span>
         <button class="speak" data-say="${esc(en)}">🔊</button>
       </div>
       <div class="flashcard" id="fc">
         <div class="flashcard-inner">
-          <div class="face"><div class="word">${esc(en)}</div><div class="hint">Нажми, чтобы перевернуть</div></div>
-          <div class="face back-face"><div class="word">${esc(ru)}</div><div class="example">${esc(ex || "")}</div>${ex ? `<button class="btn" data-say="${esc(ex)}" style="margin-top:10px">🔊 Пример</button>` : ""}</div>
+          <div class="face"><div class="word">${esc(en)}</div><div class="hint">${L("Нажми, чтобы перевернуть", "Натисни, щоб перевернути")}</div></div>
+          <div class="face back-face">
+            ${emojiOf(en) ? `<div class="card-pic">${emojiOf(en)}</div>` : ""}
+            <div class="word">${esc(ru)}</div>
+            <div class="reading">${esc(en)}${readingOf(en) ? ` — [${esc(readingOf(en))}]` : ""}</div>
+            <div class="example">${esc(ex || "")}</div>
+            ${ex ? `<button class="btn" data-say="${esc(ex)}" style="margin-top:8px">${L("🔊 Пример", "🔊 Приклад")}</button>` : ""}
+          </div>
         </div>
       </div>
       <div class="row" style="justify-content:space-between">
-        <button class="btn" id="prev" ${i === 0 ? "disabled" : ""}>← Пред.</button>
-        <button class="btn primary" id="next">${i === words.length - 1 ? "Готово ✓" : "След. →"}</button>
+        <button class="btn" id="prev" ${i === 0 ? "disabled" : ""}>${L("← Пред.", "← Попер.")}</button>
+        <button class="btn primary" id="next">${i === words.length - 1 ? L("Готово ✓", "Готово ✓") : L("След. →", "Наст. →")}</button>
       </div>`;
     document.getElementById("fc").onclick = () => document.getElementById("fc").classList.toggle("flipped");
     document.getElementById("prev").onclick = () => { i--; draw(); };
@@ -827,17 +935,17 @@ function renderQuiz(arg, mode = "quiz") {
 
     app.innerHTML = `
       ${backBtn(set.backTo)}
-      <div class="counter">Вопрос ${i + 1} из ${questions.length} · Верно: ${correct}</div>
+      <div class="counter">${L("Вопрос", "Питання")} ${i + 1} ${L("из", "з")} ${questions.length} · ${L("Верно", "Правильно")}: ${correct}</div>
       ${mode === "listen"
-        ? `<div class="question"><button class="btn primary" id="play">🔊 Прослушать ещё раз</button></div>
-           <p class="muted" style="text-align:center">Какое слово ты услышал?</p>`
+        ? `<div class="question"><button class="btn primary" id="play">${L("🔊 Прослушать ещё раз", "🔊 Прослухати ще раз")}</button></div>
+           <p class="muted" style="text-align:center">${L("Какое слово ты услышал?", "Яке слово ти почув(ла)?")}</p>`
         : `<div class="question">${esc(reverse ? ru : en)}</div>
-           <p class="muted" style="text-align:center">${reverse ? "Как это по-английски?" : "Выбери перевод"}</p>`}
+           <p class="muted" style="text-align:center">${reverse ? L("Как это по-английски?", "Як це англійською?") : L("Выбери перевод", "Обери переклад")}</p>`}
       <div class="options">
         ${options.map(o => `<button class="option" data-val="${esc(o)}">${esc(o)}</button>`).join("")}
       </div>
       <div class="feedback" id="fb"></div>
-      <button class="btn primary" id="next" style="display:none">Дальше →</button>`;
+      <button class="btn primary" id="next" style="display:none">${L("Дальше →", "Далі →")}</button>`;
 
     if (mode === "listen") {
       document.getElementById("play").onclick = () => speak(en);
@@ -856,7 +964,7 @@ function renderQuiz(arg, mode = "quiz") {
         markAnswer(en, ok);
         const fb = document.getElementById("fb");
         fb.className = "feedback " + (ok ? "good" : "bad");
-        fb.textContent = ok ? "Правильно! 🎉" : `Неверно. ${en} — ${ru}`;
+        fb.textContent = ok ? L("Правильно! 🎉", "Правильно! 🎉") : `${L("Неверно.", "Неправильно.")} ${en} — ${ru}`;
         if (mode !== "listen") speak(en);
         const next = document.getElementById("next");
         next.style.display = "inline-block";
@@ -883,15 +991,15 @@ function renderTyping(arg) {
     const target = en.replace(/^to /, "");
     app.innerHTML = `
       ${backBtn(set.backTo)}
-      <div class="counter">Слово ${i + 1} из ${questions.length} · Верно: ${correct}</div>
+      <div class="counter">${L("Слово", "Слово")} ${i + 1} ${L("из", "з")} ${questions.length} · ${L("Верно", "Правильно")}: ${correct}</div>
       <div class="question">${esc(ru)}</div>
-      <p class="muted" style="text-align:center">Напиши по-английски (${target.length} букв)</p>
+      <p class="muted" style="text-align:center">${L("Напиши по-английски", "Напиши англійською")} (${target.length} ${L("букв", "літер")})</p>
       <form id="form">
-        <input class="input" id="answer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Твой ответ...">
+        <input class="input" id="answer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${L("Твой ответ...", "Твоя відповідь...")}">
         <div class="feedback" id="fb"></div>
         <div class="row">
-          <button class="btn primary" type="submit" id="check">Проверить</button>
-          <button class="btn" type="button" id="hint">Подсказка</button>
+          <button class="btn primary" type="submit" id="check">${L("Проверить", "Перевірити")}</button>
+          <button class="btn" type="button" id="hint">${L("Подсказка", "Підказка")}</button>
         </div>
       </form>`;
     const input = document.getElementById("answer");
@@ -920,10 +1028,10 @@ function renderTyping(arg) {
       markAnswer(en, ok);
       input.disabled = true;
       fb.className = "feedback " + (ok ? "good" : "bad");
-      fb.innerHTML = ok ? "Правильно! 🎉" : `Неверно. Правильно: <b>${esc(en)}</b>`;
+      fb.innerHTML = ok ? L("Правильно! 🎉", "Правильно! 🎉") : `${L("Неверно. Правильно:", "Неправильно. Правильно:")} <b>${esc(en)}</b>`;
       if (ex) fb.innerHTML += `<div class="muted" style="font-weight:400;font-style:italic">${esc(ex)}</div>`;
       speak(en);
-      document.getElementById("check").textContent = "Дальше →";
+      document.getElementById("check").textContent = L("Дальше →", "Далі →");
       document.getElementById("hint").style.display = "none";
       document.getElementById("check").focus();
     };
@@ -943,8 +1051,8 @@ function renderPairs(arg) {
 
   app.innerHTML = `
     ${backBtn(set.backTo)}
-    <h1>🔗 Соедини пары</h1>
-    <p class="muted">Нажми на английское слово, а затем на его перевод.</p>
+    <h1>${L("🔗 Соедини пары", "🔗 З'єднай пари")}</h1>
+    <p class="muted">${L("Нажми на английское слово, а затем на его перевод.", "Натисни на англійське слово, а потім на його переклад.")}</p>
     <div class="pairs">
       <div class="options">${left.map(w => `<button class="pair" data-side="en" data-val="${esc(w)}">${esc(w)}</button>`).join("")}</div>
       <div class="options">${right.map(w => `<button class="pair" data-side="ru" data-val="${esc(w)}">${esc(w)}</button>`).join("")}</div>
@@ -973,7 +1081,7 @@ function renderPairs(arg) {
         if (done === chosen.length) {
           const sec = Math.round((Date.now() - startedAt) / 1000);
           setTimeout(() => resultScreen(chosen.length, chosen.length + mistakes, () => renderPairs(arg), set.backTo,
-            `<p>⏱ Время: ${sec} сек. · Ошибок: ${mistakes}</p>`), 300);
+            `<p>⏱ ${L("Время", "Час")}: ${sec} ${L("сек.", "с")} · ${L("Ошибок", "Помилок")}: ${mistakes}</p>`), 300);
         }
       } else {
         mistakes++;
@@ -998,7 +1106,7 @@ function renderBlitz(arg) {
     <div class="blitz-bar">
       <span id="b-lives">❤️❤️❤️</span>
       <span>⏱ <b id="b-time">60</b></span>
-      <span>Очки: <b id="b-score">0</b></span>
+      <span>${L("Очки", "Бали")}: <b id="b-score">0</b></span>
     </div>
     <div class="progress"><div id="b-progress" style="width:100%;background:var(--primary)"></div></div>
     <div class="combo" id="b-combo"></div>
@@ -1042,7 +1150,7 @@ function renderBlitz(arg) {
     document.getElementById("b-score").textContent = score;
     document.getElementById("b-lives").textContent = "❤️".repeat(lives) + "🤍".repeat(3 - lives);
     const mult = Math.min(1 + Math.floor(combo / 3), 4);
-    document.getElementById("b-combo").textContent = combo >= 3 ? `🔥 Комбо ×${mult} (${combo} подряд)` : "";
+    document.getElementById("b-combo").textContent = combo >= 3 ? `🔥 ${L("Комбо", "Комбо")} ×${mult} (${combo} ${L("подряд", "поспіль")})` : "";
   }
 
   function finish() {
@@ -1056,12 +1164,12 @@ function renderBlitz(arg) {
     app.innerHTML = `
       <div class="card result">
         <div class="big">${record ? "🏆" : "⚡"}</div>
-        <h1>${score} очков</h1>
-        <p class="muted">${record ? "Новый рекорд!" : `Рекорд: ${progress.best[arg]}`}</p>
+        <h1>${score} ${L("очков", "балів")}</h1>
+        <p class="muted">${record ? L("Новый рекорд!", "Новий рекорд!") : `${L("Рекорд", "Рекорд")}: ${progress.best[arg]}`}</p>
         <p>+${Math.round(score / 5)} ⭐</p>
         <div class="row" style="justify-content:center">
-          <button class="btn primary" id="again">Ещё раз</button>
-          <button class="btn" data-go="${set.backTo}">Назад</button>
+          <button class="btn primary" id="again">${L("Ещё раз", "Ще раз")}</button>
+          <button class="btn" data-go="${set.backTo}">${L("Назад", "Назад")}</button>
         </div>
       </div>`;
     document.getElementById("again").onclick = () => renderBlitz(arg);
@@ -1086,7 +1194,7 @@ function renderGrammar(idx) {
     ${backBtn("home")}
     <h1>${esc(g.title)}</h1>
     <div class="card theory">${g.theory}</div>
-    <div style="margin-top:16px"><button class="btn primary" data-go="gex:${idx}">Начать упражнения →</button></div>`;
+    <div style="margin-top:16px"><button class="btn primary" data-go="gex:${idx}">${L("Начать упражнения →", "Почати вправи →")}</button></div>`;
 }
 
 // Упражнения «вставь слово» — для уроков грамматики и правил к рассказам
@@ -1098,11 +1206,11 @@ function runExercises(exercises, backTo, onFinish, again) {
     const [sentence, opts, ans] = qs[i];
     app.innerHTML = `
       ${backBtn(backTo)}
-      <div class="counter">Задание ${i + 1} из ${qs.length} · Верно: ${correct}</div>
+      <div class="counter">${L("Задание", "Завдання")} ${i + 1} ${L("из", "з")} ${qs.length} · ${L("Верно", "Правильно")}: ${correct}</div>
       <div class="question">${esc(sentence).replace("___", "<u>&nbsp;&nbsp;?&nbsp;&nbsp;</u>")}</div>
       <div class="options">${opts.map((o, k) => `<button class="option" data-k="${k}">${esc(o)}</button>`).join("")}</div>
       <div class="feedback" id="fb"></div>
-      <button class="btn primary" id="next" style="display:none">Дальше →</button>`;
+      <button class="btn primary" id="next" style="display:none">${L("Дальше →", "Далі →")}</button>`;
     app.querySelectorAll(".option").forEach(btn => {
       btn.onclick = () => {
         const ok = Number(btn.dataset.k) === ans;
@@ -1116,7 +1224,7 @@ function runExercises(exercises, backTo, onFinish, again) {
         const full = sentence.replace(/ \(.*\)$/, "").replace("___", opts[ans]);
         const fb = document.getElementById("fb");
         fb.className = "feedback " + (ok ? "good" : "bad");
-        fb.textContent = (ok ? "Правильно! " : "Неверно. ") + full;
+        fb.textContent = (ok ? L("Правильно! ", "Правильно! ") : L("Неверно. ", "Неправильно. ")) + full;
         speak(full);
         const next = document.getElementById("next");
         next.style.display = "inline-block";
@@ -1196,5 +1304,7 @@ document.addEventListener("click", e => {
 
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
 window.addEventListener("hashchange", render);
+document.getElementById("lang-btn").onclick = () => setLang(LANG === "uk" ? "ru" : "uk");
+applyLang();
 updateStats();
 render();

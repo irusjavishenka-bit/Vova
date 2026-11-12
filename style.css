@@ -283,3 +283,27 @@ h1 .w { padding: 0; }
 .abc-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .abc-option { text-align: center; font-size: 2rem; font-weight: 800; }
 .btn.danger { border-color: var(--bad); color: var(--bad); }
+
+/* Язык */
+.lang-btn {
+  border: 1px solid var(--border); background: var(--card); color: var(--text);
+  border-radius: 8px; padding: 2px 8px; font-size: .8rem; font-weight: 600;
+}
+html[lang="uk"] [data-lang="ru"], html[lang="ru"] [data-lang="uk"] { display: none; }
+
+/* Произношение и картинки */
+.reading { color: var(--primary); font-size: 1.05rem; margin-top: 6px; }
+.reading-sm { color: var(--primary); font-size: .9rem; white-space: nowrap; }
+.card-pic { font-size: 3.2rem; line-height: 1.1; }
+.flashcard { height: 300px; }
+.face .word { overflow-wrap: anywhere; }
+.btn-sm { padding: 4px 10px; font-size: .9rem; }
+.letter-head { font-size: 1rem; margin: 12px 0 6px; }
+.letter-sounds { display: grid; gap: 8px; }
+.ls-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.ls-row:last-child { border-bottom: 0; }
+.ls-pic { font-size: 1.8rem; width: 2.2rem; text-align: center; }
+.ls-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ls-word { font-size: 1.3rem; letter-spacing: .02em; }
+.ls-note { font-size: .85rem; }
+.hl { color: var(--bad); text-decoration: underline; text-underline-offset: 3px; }
