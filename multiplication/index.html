@@ -196,8 +196,8 @@ const ICON = {learn:'📖', train:'🎯', review:'🔁', mix:'🧩'};
 // ---------- сохранение ----------
 let state = load();
 function load(){
-  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.stars) { if(s.sound===undefined) s.sound=true; return s; } } catch(e){}
-  return {stars:{}, sound:true};
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.stars) { if(s.sound===undefined) s.sound=true; if(!s.weak) s.weak={}; return s; } } catch(e){}
+  return {stars:{}, sound:true, weak:{}};
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
 function doneCount(){ return Object.keys(state.stars).length; }
@@ -327,7 +327,7 @@ function home(){
   app.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{ SND.tap(); openStep(+b.dataset.step); });
   document.getElementById('snd').onclick=()=>{ state.sound=!state.sound; save(); home(); };
   document.getElementById('reset').onclick=()=>{
-    if(confirm('Стереть весь прогресс и начать сначала?')){ state={stars:{},sound:state.sound}; save(); home(); }
+    if(confirm('Стереть весь прогресс и начать сначала?')){ state={stars:{},sound:state.sound,weak:{}}; save(); home(); }
   };
 }
 
@@ -354,6 +354,7 @@ function tableRows(n, hide, learned){
     else if(k<n && learned.includes(k)){ tag=`<span class="tag known">🔄 уже знаешь!</span>`;
       swap=`<span class="swap">= ${k} × ${n} из таблицы на ${k} ${FRIENDS[k].e}</span>`; }
     else if(k>=n) tag='<span class="tag new">🆕 новое</span>';
+    if(isWeak(n,k)) tag+=' <span class="tag new" style="background:color-mix(in srgb,var(--bad) 18%,var(--card));color:var(--bad)">❗ была ошибка</span>';
     r += `<button class="row" data-k="${k}">
       <span class="l"><span>${n} × ${k} =</span>${tag}${hide?'':swap}</span>
       <span style="display:flex;align-items:center;gap:8px"><span class="dots">${dots}</span>
@@ -400,10 +401,6 @@ function learn(i, n){
   function draw(){
     h(`${topBar(f.island)}
     ${mascot(f.e, intro)}
-    ${n>2 ? `<div class="card"><div class="score">
-      <div style="background:color-mix(in srgb,var(--review) 15%,var(--card))"><b>${known}</b>🔄 уже знаешь</div>
-      <div style="background:color-mix(in srgb,var(--ok) 15%,var(--card))"><b>${easy}</b>😎 легко</div>
-      <div style="background:color-mix(in srgb,var(--accent) 15%,var(--card))"><b>${fresh}</b>🆕 новых</div></div></div>` : ''}
     <div class="card">
       <div class="tip">💡 ${TIPS[n]}</div>
       <div class="toggle">
@@ -452,6 +449,8 @@ function review(i, tables){
 }
 
 // ---------- тренажёр ----------
+function pairKey(a,b){ return Math.min(a,b)+'x'+Math.max(a,b); }
+function isWeak(a,b){ return (state.weak[pairKey(a,b)]||0) > 0; }
 function makeQuestions(tables, count){
   const pool = [];
   tables.forEach((t,idx)=>{
@@ -463,8 +462,16 @@ function makeQuestions(tables, count){
   });
   shuffle(pool);
   const out = [], seen = new Set();
+  // сначала — примеры, в которых ребёнок раньше ошибался (до половины тренажёра)
+  const weak = Object.entries(state.weak)
+    .map(([k,v])=>{ const [x,y]=k.split('x').map(Number); return {x,y,v}; })
+    .filter(w=>w.v>0 && (tables.includes(w.x)||tables.includes(w.y)) && w.x>=1 && w.y<=10)
+    .sort((p,q)=>q.v-p.v).slice(0, Math.ceil(count/2));
+  weak.forEach(w=>{ const big=tables.includes(w.y)?w.y:w.x, other=big===w.y?w.x:w.y;
+    out.push(Math.random()<.5 ? {a:big,b:other} : {a:other,b:big}); seen.add(pairKey(w.x,w.y)); });
   for(const q of pool){ const key=Math.min(q.a,q.b)+'x'+Math.max(q.a,q.b);
-    if(seen.has(key)) continue; seen.add(key); out.push(q); if(out.length>=count) break; }
+    if(out.length>=count) break; if(seen.has(key)) continue; seen.add(key); out.push(q); }
+  shuffle(out);
   while(out.length<count) out.push(pool[Math.floor(Math.random()*pool.length)]);
   return out;
 }
@@ -477,7 +484,7 @@ function trainer(i, tables, count){
   // какие таблицы уже выучены к этому шагу (для подсказок «поменяй местами»)
   const learned = s.final ? range(2,MAX) : range(2, stage);
   const queue = makeQuestions(tables, count);
-  const total = count;
+  let total = count;
   let solved = 0, mistakes = 0, wrongList = [], input = '', locked = false, firstTry = true, combo = 0, hintShown = false;
   const praise = ['Молодец! 🎉','Верно! 👍','Супер! ⭐','Отлично! 💪','Так держать! 🚀','Правильно! ✅','Ух ты! 🤩','Гений! 🧠'];
 
@@ -518,7 +525,13 @@ function trainer(i, tables, count){
     locked = true;
     if(+input===right){
       SND.ok(); setAns('ok'); fb.style.color='var(--ok)';
+      const key = pairKey(q.a,q.b);
       queue.shift(); solved++;
+      if(firstTry && !hintShown){ if(state.weak[key]){ state.weak[key]--; if(state.weak[key]<=0) delete state.weak[key]; save(); } }
+      else {
+        // ошибся — этот пример вернётся ещё раз через пару вопросов
+        queue.splice(Math.min(2, queue.length), 0, {a:q.b, b:q.a}); total++;
+      }
       if(firstTry && !hintShown) combo++; else combo=0;
       fb.textContent = combo>=3 && combo%3===0 ? `Серия ${combo}! Ты огонь! 🔥` : pick(praise);
       floatText(firstTry?'+1 ⭐':'👍', document.getElementById('ans'));
@@ -528,7 +541,8 @@ function trainer(i, tables, count){
       setTimeout(next, 750);
     } else {
       SND.bad(); combo = 0;
-      if(firstTry){ mistakes++; wrongList.push(q.a+' × '+q.b+' = '+right); }
+      if(firstTry){ mistakes++; wrongList.push(q.a+' × '+q.b+' = '+right);
+        const key=pairKey(q.a,q.b); state.weak[key]=Math.min((state.weak[key]||0)+2, 4); save(); }
       firstTry = false;
       setAns('bad'); document.getElementById('ans').classList.add('shake');
       document.getElementById('combo').textContent='';
