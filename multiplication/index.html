@@ -167,7 +167,7 @@ for (let n = 2; n <= MAX; n++) {
   steps.push({type:'learn', tables:[n], stage:n});
   steps.push({type:'train', tables:[n], stage:n});
   if (n > 2) {
-    steps.push({type:'review', tables:range(2, n-1), stage:n});
+    steps.push({type:'review', tables:range(2, n), stage:n});
     steps.push({type:'mix', tables:range(2, n), stage:n});
   }
 }
