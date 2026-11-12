@@ -346,11 +346,10 @@ function bindBack(){ document.getElementById('back').onclick = home; }
 // строчки таблицы: n × k; learned — таблицы, выученные раньше
 function tableRows(n, hide, learned){
   let r = '';
-  for(let k=1;k<=10;k++){
+  for(let k=2;k<=10;k++){
     let dots=''; if(!hide && n*k<=30) for(let d=0; d<n*k; d++) dots+='<i></i>';
     let tag='', swap='';
-    if(k===1) tag='<span class="tag easy">😎 легко</span>';
-    else if(k===10) tag='<span class="tag easy">🔟 припиши 0</span>';
+    if(k===10) tag='<span class="tag easy">🔟 припиши 0</span>';
     else if(k<n && learned.includes(k)){ tag=`<span class="tag known">🔄 уже знаешь!</span>`;
       swap=`<span class="swap">= ${k} × ${n} из таблицы на ${k} ${FRIENDS[k].e}</span>`; }
     else if(k>=n) tag='<span class="tag new">🆕 новое</span>';
@@ -394,10 +393,10 @@ function learn(i, n){
   let hide = false;
   const learned = range(2, n-1);
   const f = FRIENDS[n];
-  const known = learned.length, easy = 2, fresh = 10 - known - easy;
+  const known = learned.length, easy = 1, fresh = 9 - known - easy;
   const intro = n===2
     ? `Привет! Я ${f.name} ${f.e}. Умножать на 2 — проще простого: это число плюс оно же! Открой секрет внизу — он поможет на всех островах.`
-    : `Привет! Я ${f.name} ${f.e}. Хорошая новость: из 10 примеров ты уже знаешь ${known+easy}! Новых всего <b>${fresh}</b>. Примеры с 🔄 — переверни, и они из прошлых таблиц.`;
+    : `Привет! Я ${f.name} ${f.e}. Хорошая новость: из 9 примеров ты уже знаешь ${known+easy}! Новых всего <b>${fresh}</b>. Примеры с 🔄 — переверни, и они из прошлых таблиц.`;
   function draw(){
     h(`${topBar(f.island)}
     ${mascot(f.e, intro)}
@@ -455,7 +454,7 @@ function makeQuestions(tables, count){
   const pool = [];
   tables.forEach((t,idx)=>{
     const weight = (tables.length>1 && idx===tables.length-1) ? 2 : 1;
-    for(let k=1;k<=10;k++) for(let w=0;w<weight;w++){
+    for(let k=2;k<=10;k++) for(let w=0;w<weight;w++){
       // часто переставляем множители: 7 × 3 и 3 × 7 — тренируем перестановку
       pool.push(Math.random()<.35 ? {a:k,b:t} : {a:t,b:k});
     }
@@ -465,7 +464,7 @@ function makeQuestions(tables, count){
   // сначала — примеры, в которых ребёнок раньше ошибался (до половины тренажёра)
   const weak = Object.entries(state.weak)
     .map(([k,v])=>{ const [x,y]=k.split('x').map(Number); return {x,y,v}; })
-    .filter(w=>w.v>0 && (tables.includes(w.x)||tables.includes(w.y)) && w.x>=1 && w.y<=10)
+    .filter(w=>w.v>0 && (tables.includes(w.x)||tables.includes(w.y)) && w.x>=2 && w.y<=10)
     .sort((p,q)=>q.v-p.v).slice(0, Math.ceil(count/2));
   weak.forEach(w=>{ const big=tables.includes(w.y)?w.y:w.x, other=big===w.y?w.x:w.y;
     out.push(Math.random()<.5 ? {a:big,b:other} : {a:other,b:big}); seen.add(pairKey(w.x,w.y)); });
