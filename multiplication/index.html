@@ -402,6 +402,7 @@ function learn(i, n){
     ${mascot(f.e, intro)}
     <div class="card">
       <div class="tip">💡 ${TIPS[n]}</div>
+      <div class="tip" style="background:color-mix(in srgb,var(--ok) 14%,var(--card))">📏 <b>Два простых правила:</b><br>0️⃣ Умножаем на 0 — всегда будет 0: ${n} × 0 = 0<br>1️⃣ Умножаем на 1 — получается то же самое число: ${n} × 1 = ${n}</div>
       <div class="toggle">
         <button id="show" class="${!hide?'on':''}" style="${!hide?'background:var(--learn);border-color:var(--learn)':''}">👀 Смотрю</button>
         <button id="hide" class="${hide?'on':''}" style="${hide?'background:var(--learn);border-color:var(--learn)':''}">🙈 Проверяю себя</button>
