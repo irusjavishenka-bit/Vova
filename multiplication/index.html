@@ -526,10 +526,10 @@ function trainer(i, tables, count){
       SND.ok(); setAns('ok'); fb.style.color='var(--ok)';
       const key = pairKey(q.a,q.b);
       queue.shift(); solved++;
-      if(firstTry && !hintShown){ if(state.weak[key]){ state.weak[key]--; if(state.weak[key]<=0) delete state.weak[key]; save(); } }
+      if(firstTry && !hintShown){ if(state.weak[key] && !q.rep){ state.weak[key]--; if(state.weak[key]<=0) delete state.weak[key]; save(); } }
       else {
         // ошибся — этот пример вернётся ещё раз через пару вопросов
-        queue.splice(Math.min(2, queue.length), 0, {a:q.b, b:q.a}); total++;
+        queue.splice(Math.min(2, queue.length), 0, {a:q.b, b:q.a, rep:true}); total++;
       }
       if(firstTry && !hintShown) combo++; else combo=0;
       fb.textContent = combo>=3 && combo%3===0 ? `Серия ${combo}! Ты огонь! 🔥` : pick(praise);
